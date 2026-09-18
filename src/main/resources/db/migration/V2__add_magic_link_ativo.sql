@@ -1,0 +1,1 @@
+ALTER TABLE projeto ADD COLUMN magic_link_ativo BOOLEAN NOT NULL DEFAULT TRUE;
