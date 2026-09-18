@@ -1,0 +1,496 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-09-18T18:20:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "wrk_taketoo",
+      "_type": "workspace",
+      "parentId": null,
+      "modified": 1726683600000,
+      "created": 1726683600000,
+      "name": "TakeToo API",
+      "description": "Workspace completo para testes da API TakeToo (MVP de Gestão de Projetos Audiovisuais)",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_taketoo",
+      "modified": 1726683600000,
+      "created": 1726683600000,
+      "name": "Base Environment",
+      "data": {
+        "baseUrl": "http://localhost:8080",
+        "token_profissional": "",
+        "token_cliente": "",
+        "cliente_id": "",
+        "projeto_id": "",
+        "versao_id": ""
+      },
+      "dataPropertyOrder": {
+        "&": [
+          "baseUrl",
+          "token_profissional",
+          "token_cliente",
+          "cliente_id",
+          "projeto_id",
+          "versao_id"
+        ]
+      },
+      "color": "#6366f1",
+      "isPrivate": false,
+      "metaSortKey": 1726683600000
+    },
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_taketoo",
+      "modified": 1726683600000,
+      "created": 1726683600000,
+      "name": "01. Autenticação",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 100
+    },
+    {
+      "_id": "fld_profissionais",
+      "_type": "request_group",
+      "parentId": "wrk_taketoo",
+      "modified": 1726683600000,
+      "created": 1726683600000,
+      "name": "02. Profissionais",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 200
+    },
+    {
+      "_id": "fld_clientes",
+      "_type": "request_group",
+      "parentId": "wrk_taketoo",
+      "modified": 1726683600000,
+      "created": 1726683600000,
+      "name": "03. Clientes",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 300
+    },
+    {
+      "_id": "fld_projetos",
+      "_type": "request_group",
+      "parentId": "wrk_taketoo",
+      "modified": 1726683600000,
+      "created": 1726683600000,
+      "name": "04. Projetos",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 400
+    },
+    {
+      "_id": "fld_versoes",
+      "_type": "request_group",
+      "parentId": "wrk_taketoo",
+      "modified": 1726683600000,
+      "created": 1726683600000,
+      "name": "05. Versões",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 500
+    },
+    {
+      "_id": "fld_comentarios",
+      "_type": "request_group",
+      "parentId": "wrk_taketoo",
+      "modified": 1726683600000,
+      "created": 1726683600000,
+      "name": "06. Comentários",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 600
+    },
+    {
+      "_id": "fld_portal",
+      "_type": "request_group",
+      "parentId": "wrk_taketoo",
+      "modified": 1726683600000,
+      "created": 1726683600000,
+      "name": "07. Portal do Cliente (Magic Link)",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 700
+    },
+    {
+      "_id": "fld_health",
+      "_type": "request_group",
+      "parentId": "wrk_taketoo",
+      "modified": 1726683600000,
+      "created": 1726683600000,
+      "name": "08. Health Check",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 800
+    },
+    {
+      "_id": "req_register",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Registrar Profissional",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/auth/register",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Produtora Lucas Film\",\n  \"email\": \"lucas@produtora.com\",\n  \"senha\": \"senha123456\",\n  \"plano\": \"PRO\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 10
+    },
+    {
+      "_id": "req_login",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Login Profissional",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/auth/login",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"lucas@produtora.com\",\n  \"senha\": \"senha123456\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 20
+    },
+    {
+      "_id": "req_magic_link",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Gerar Magic Link (Token de Acesso Cliente)",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/auth/magic-link",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"projetoId\": \"{{ _.projeto_id }}\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_profissional }}"
+      },
+      "metaSortKey": 30
+    },
+    {
+      "_id": "req_me",
+      "_type": "request",
+      "parentId": "fld_profissionais",
+      "name": "Obter Meus Dados (/me)",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/profissionais/me",
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_profissional }}"
+      },
+      "metaSortKey": 10
+    },
+    {
+      "_id": "req_criar_cliente",
+      "_type": "request",
+      "parentId": "fld_clientes",
+      "name": "Criar Cliente",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/clientes",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Cliente Acme Corp\",\n  \"telefone\": \"(11) 98888-7777\",\n  \"email\": \"contato@acme.com\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_profissional }}"
+      },
+      "metaSortKey": 10
+    },
+    {
+      "_id": "req_listar_clientes",
+      "_type": "request",
+      "parentId": "fld_clientes",
+      "name": "Listar Clientes",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/clientes",
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_profissional }}"
+      },
+      "metaSortKey": 20
+    },
+    {
+      "_id": "req_buscar_cliente",
+      "_type": "request",
+      "parentId": "fld_clientes",
+      "name": "Buscar Cliente por ID",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/clientes/{{ _.cliente_id }}",
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_profissional }}"
+      },
+      "metaSortKey": 30
+    },
+    {
+      "_id": "req_criar_projeto",
+      "_type": "request",
+      "parentId": "fld_projetos",
+      "name": "Criar Projeto",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/projetos",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Comercial Institucional 2026\",\n  \"clienteId\": \"{{ _.cliente_id }}\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_profissional }}"
+      },
+      "metaSortKey": 10
+    },
+    {
+      "_id": "req_listar_projetos",
+      "_type": "request",
+      "parentId": "fld_projetos",
+      "name": "Listar Projetos",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/projetos",
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_profissional }}"
+      },
+      "metaSortKey": 20
+    },
+    {
+      "_id": "req_buscar_projeto",
+      "_type": "request",
+      "parentId": "fld_projetos",
+      "name": "Buscar Projeto por ID",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/projetos/{{ _.projeto_id }}",
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_profissional }}"
+      },
+      "metaSortKey": 30
+    },
+    {
+      "_id": "req_status_projeto",
+      "_type": "request",
+      "parentId": "fld_projetos",
+      "name": "Atualizar Status do Projeto (Etapa)",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/api/projetos/{{ _.projeto_id }}/status",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"EM_EDICAO\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_profissional }}"
+      },
+      "metaSortKey": 40
+    },
+    {
+      "_id": "req_revogar_link",
+      "_type": "request",
+      "parentId": "fld_projetos",
+      "name": "Revogar Magic Link do Projeto",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/projetos/{{ _.projeto_id }}/revogar-link",
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_profissional }}"
+      },
+      "metaSortKey": 50
+    },
+    {
+      "_id": "req_criar_versao",
+      "_type": "request",
+      "parentId": "fld_versoes",
+      "name": "Criar Versão (Publicar corte)",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/projetos/{{ _.projeto_id }}/versoes",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"arquivoUrl\": \"https://exemplo.com/videos/corte_v1.mp4\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_profissional }}"
+      },
+      "metaSortKey": 10
+    },
+    {
+      "_id": "req_listar_versoes",
+      "_type": "request",
+      "parentId": "fld_versoes",
+      "name": "Listar Versões do Projeto",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/projetos/{{ _.projeto_id }}/versoes",
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_profissional }}"
+      },
+      "metaSortKey": 20
+    },
+    {
+      "_id": "req_criar_comentario",
+      "_type": "request",
+      "parentId": "fld_comentarios",
+      "name": "Criar Comentário na Versão",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/versoes/{{ _.versao_id }}/comentarios",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"texto\": \"Ajustado o áudio na introdução\",\n  \"tempoVideo\": 12\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_profissional }}"
+      },
+      "metaSortKey": 10
+    },
+    {
+      "_id": "req_listar_comentarios",
+      "_type": "request",
+      "parentId": "fld_comentarios",
+      "name": "Listar Comentários da Versão",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/versoes/{{ _.versao_id }}/comentarios",
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_profissional }}"
+      },
+      "metaSortKey": 20
+    },
+    {
+      "_id": "req_portal_projeto",
+      "_type": "request",
+      "parentId": "fld_portal",
+      "name": "[Portal] Detalhes do Projeto",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/portal/projetos/{{ _.projeto_id }}",
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_cliente }}"
+      },
+      "metaSortKey": 10
+    },
+    {
+      "_id": "req_portal_versoes",
+      "_type": "request",
+      "parentId": "fld_portal",
+      "name": "[Portal] Listar Versões Disponíveis",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/portal/projetos/{{ _.projeto_id }}/versoes",
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_cliente }}"
+      },
+      "metaSortKey": 20
+    },
+    {
+      "_id": "req_portal_comentar",
+      "_type": "request",
+      "parentId": "fld_portal",
+      "name": "[Portal] Cliente Adicionar Comentário",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/portal/versoes/{{ _.versao_id }}/comentarios",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"texto\": \"A cor do logo aos 20s está um pouco lavada, favor saturar\",\n  \"tempoVideo\": 20\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_cliente }}"
+      },
+      "metaSortKey": 30
+    },
+    {
+      "_id": "req_portal_status",
+      "_type": "request",
+      "parentId": "fld_portal",
+      "name": "[Portal] Cliente Aprovar / Rejeitar Versão",
+      "method": "PATCH",
+      "url": "{{ _.baseUrl }}/api/portal/versoes/{{ _.versao_id }}/status",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"status\": \"APROVADA\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_cliente }}"
+      },
+      "metaSortKey": 40
+    },
+    {
+      "_id": "req_ping",
+      "_type": "request",
+      "parentId": "fld_health",
+      "name": "Ping / Health",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/ping",
+      "metaSortKey": 10
+    }
+  ]
+}
