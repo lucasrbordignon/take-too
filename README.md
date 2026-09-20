@@ -93,6 +93,8 @@ GRAVACAO_CONCLUIDA -> EM_EDICAO -> REVISAO_CLIENTE -> APROVADO -> ENTREGUE
 
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/refresh`
+- `POST /api/auth/logout`
 - `GET /api/profissionais/me`
 - `GET` e `POST /api/clientes`
 - `GET /api/clientes/{id}`

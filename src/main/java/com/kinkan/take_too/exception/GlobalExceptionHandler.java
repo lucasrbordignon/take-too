@@ -21,6 +21,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler({UnauthorizedException.class, org.springframework.security.authentication.BadCredentialsException.class})
+    public ResponseEntity<Map<String, Object>> handleUnauthorized(Exception ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
     @ExceptionHandler({ForbiddenException.class, AccessDeniedException.class})
     public ResponseEntity<Map<String, Object>> handleForbidden(Exception ex) {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());

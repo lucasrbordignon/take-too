@@ -20,6 +20,7 @@ import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -45,6 +46,9 @@ class SecurityIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private com.kinkan.take_too.repository.RefreshTokenRepository refreshTokenRepository;
+
     private Profissional profissional;
     private Cliente cliente;
     private Projeto projeto;
@@ -53,6 +57,7 @@ class SecurityIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        refreshTokenRepository.deleteAll();
         projetoRepository.deleteAll();
         clienteRepository.deleteAll();
         profissionalRepository.deleteAll();
@@ -173,5 +178,79 @@ class SecurityIntegrationTest {
         mockMvc.perform(get("/api/portal/projetos/" + projeto.getId())
                 .header("Authorization", "Bearer " + novoTokenCliente))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void fluxoCompletoDeLoginERefreshToken() throws Exception {
+        // 1. Login com credenciais válidas
+        var loginResult = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"" + profissional.getEmail() + "\",\"senha\":\"senha123\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").exists())
+                .andExpect(jsonPath("$.refreshToken").exists())
+                .andExpect(header().exists("Set-Cookie"))
+                .andReturn();
+
+        String loginResponse = loginResult.getResponse().getContentAsString();
+        var jsonMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var rootNode = jsonMapper.readTree(loginResponse);
+        String primeiroRefreshToken = rootNode.get("refreshToken").asText();
+        String primeiroAccessToken = rootNode.get("token").asText();
+
+        // 2. Testar chamada usando primeiro Access Token
+        mockMvc.perform(get("/api/profissionais/me")
+                .header("Authorization", "Bearer " + primeiroAccessToken))
+                .andExpect(status().isOk());
+
+        // 3. Renovar o Access Token via POST /api/auth/refresh usando o Refresh Token
+        var refreshResult = mockMvc.perform(post("/api/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"refreshToken\":\"" + primeiroRefreshToken + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").exists())
+                .andExpect(jsonPath("$.refreshToken").exists())
+                .andExpect(header().exists("Set-Cookie"))
+                .andReturn();
+
+        String refreshResponse = refreshResult.getResponse().getContentAsString();
+        var refreshNode = jsonMapper.readTree(refreshResponse);
+        String segundoRefreshToken = refreshNode.get("refreshToken").asText();
+        String segundoAccessToken = refreshNode.get("token").asText();
+
+        // Tokens devem ser diferentes (rotação)
+        org.junit.jupiter.api.Assertions.assertNotEquals(primeiroRefreshToken, segundoRefreshToken);
+
+        // 4. Testar chamada usando o novo Access Token
+        mockMvc.perform(get("/api/profissionais/me")
+                .header("Authorization", "Bearer " + segundoAccessToken))
+                .andExpect(status().isOk());
+
+        // 5. Tentar reutilizar o primeiro Refresh Token (deve ser rejeitado com 401 por rotação anti-replay)
+        mockMvc.perform(post("/api/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"refreshToken\":\"" + primeiroRefreshToken + "\"}"))
+                .andExpect(status().isUnauthorized());
+
+        // 6. Fazer logout
+        mockMvc.perform(post("/api/auth/logout")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"refreshToken\":\"" + segundoRefreshToken + "\"}"))
+                .andExpect(status().isNoContent())
+                .andExpect(header().exists("Set-Cookie"));
+
+        // 7. Tentar renovar após logout deve retornar 401
+        mockMvc.perform(post("/api/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"refreshToken\":\"" + segundoRefreshToken + "\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void refreshSemTokenDeveRetornar401() throws Exception {
+        mockMvc.perform(post("/api/auth/refresh")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+                .andExpect(status().isUnauthorized());
     }
 }

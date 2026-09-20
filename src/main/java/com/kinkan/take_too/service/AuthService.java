@@ -28,17 +28,23 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final TokenService tokenService;
+    private final RefreshTokenService refreshTokenService;
 
-    public String login(LoginRequestDTO data) {
+    @org.springframework.transaction.annotation.Transactional
+    public TokenResponseDTO login(LoginRequestDTO data) {
         var usernamePassword = new UsernamePasswordAuthenticationToken(data.email(), data.senha());
         var auth = this.authenticationManager.authenticate(usernamePassword);
 
         var userDetails = (CustomUserDetails) auth.getPrincipal();
         var profissional = profissionalRepository.findById(userDetails.getId()).orElseThrow();
 
-        return tokenService.generateToken(profissional);
+        String accessToken = tokenService.generateToken(profissional);
+        var refreshToken = refreshTokenService.createRefreshToken(profissional);
+
+        return new TokenResponseDTO(accessToken, refreshToken.getToken());
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public TokenResponseDTO register(RegisterRequestDTO dto) {
         if (profissionalRepository.findByEmail(dto.email()).isPresent()) {
             throw new IllegalArgumentException("E-mail já está em uso.");
@@ -53,7 +59,30 @@ public class AuthService {
         profissionalRepository.save(profissional);
 
         String token = tokenService.generateToken(profissional);
-        return new TokenResponseDTO(token);
+        var refreshToken = refreshTokenService.createRefreshToken(profissional);
+        return new TokenResponseDTO(token, refreshToken.getToken());
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public TokenResponseDTO refresh(String refreshTokenValue) {
+        if (refreshTokenValue == null || refreshTokenValue.trim().isEmpty()) {
+            throw new com.kinkan.take_too.exception.UnauthorizedException("Refresh token não informado.");
+        }
+
+        var refreshToken = refreshTokenService.findByToken(refreshTokenValue.trim())
+                .orElseThrow(() -> new com.kinkan.take_too.exception.UnauthorizedException("Refresh token inválido ou não encontrado."));
+
+        var newRefreshToken = refreshTokenService.rotateRefreshToken(refreshToken);
+        String newAccessToken = tokenService.generateToken(newRefreshToken.getProfissional());
+
+        return new TokenResponseDTO(newAccessToken, newRefreshToken.getToken());
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void logout(String refreshTokenValue) {
+        if (refreshTokenValue != null && !refreshTokenValue.trim().isEmpty()) {
+            refreshTokenService.revokeToken(refreshTokenValue.trim());
+        }
     }
 
     @org.springframework.transaction.annotation.Transactional

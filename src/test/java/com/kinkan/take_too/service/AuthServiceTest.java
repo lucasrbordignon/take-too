@@ -6,7 +6,9 @@ import com.kinkan.take_too.domain.dto.TokenResponseDTO;
 import com.kinkan.take_too.domain.entity.Cliente;
 import com.kinkan.take_too.domain.entity.Profissional;
 import com.kinkan.take_too.domain.entity.Projeto;
+import com.kinkan.take_too.domain.entity.RefreshToken;
 import com.kinkan.take_too.exception.ResourceNotFoundException;
+import com.kinkan.take_too.exception.UnauthorizedException;
 import com.kinkan.take_too.repository.ProfissionalRepository;
 import com.kinkan.take_too.repository.ProjetoRepository;
 import com.kinkan.take_too.security.CustomUserDetails;
@@ -22,6 +24,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -48,6 +51,9 @@ class AuthServiceTest {
     @Mock
     private TokenService tokenService;
 
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -56,6 +62,7 @@ class AuthServiceTest {
     private Profissional profissional;
     private Cliente cliente;
     private Projeto projeto;
+    private RefreshToken refreshToken;
 
     @BeforeEach
     void setUp() {
@@ -78,6 +85,13 @@ class AuthServiceTest {
         projeto.setProfissional(profissional);
         projeto.setCliente(cliente);
         projeto.setMagicLinkAtivo(true);
+
+        refreshToken = new RefreshToken();
+        refreshToken.setId(UUID.randomUUID());
+        refreshToken.setToken("mock-refresh-token");
+        refreshToken.setProfissional(profissional);
+        refreshToken.setDataExpiracao(Instant.now().plusSeconds(3600));
+        refreshToken.setRevogado(false);
     }
 
     @Test
@@ -90,10 +104,13 @@ class AuthServiceTest {
         when(auth.getPrincipal()).thenReturn(userDetails);
         when(profissionalRepository.findById(Objects.requireNonNull(profissionalId))).thenReturn(Optional.of(profissional));
         when(tokenService.generateToken(profissional)).thenReturn("jwt-token");
+        when(refreshTokenService.createRefreshToken(profissional)).thenReturn(refreshToken);
 
-        String token = authService.login(dto);
+        TokenResponseDTO response = authService.login(dto);
 
-        assertEquals("jwt-token", token);
+        assertNotNull(response);
+        assertEquals("jwt-token", response.token());
+        assertEquals("mock-refresh-token", response.refreshToken());
     }
 
     @Test
@@ -103,11 +120,13 @@ class AuthServiceTest {
         when(profissionalRepository.findByEmail(dto.email())).thenReturn(Optional.empty());
         when(passwordEncoder.encode(dto.senha())).thenReturn("senhaEncoded");
         when(tokenService.generateToken(any(Profissional.class))).thenReturn("token-registrado");
+        when(refreshTokenService.createRefreshToken(any(Profissional.class))).thenReturn(refreshToken);
 
         TokenResponseDTO response = authService.register(dto);
 
         assertNotNull(response);
         assertEquals("token-registrado", response.token());
+        assertEquals("mock-refresh-token", response.refreshToken());
         verify(profissionalRepository, times(1)).save(any(Profissional.class));
     }
 
@@ -119,6 +138,43 @@ class AuthServiceTest {
 
         assertThrows(IllegalArgumentException.class, () -> authService.register(dto));
         verify(profissionalRepository, never()).save(any());
+    }
+
+    @Test
+    void deveRenovarTokenComSucesso() {
+        RefreshToken newRefreshToken = new RefreshToken();
+        newRefreshToken.setToken("novo-refresh-token");
+        newRefreshToken.setProfissional(profissional);
+
+        when(refreshTokenService.findByToken("mock-refresh-token")).thenReturn(Optional.of(refreshToken));
+        when(refreshTokenService.rotateRefreshToken(refreshToken)).thenReturn(newRefreshToken);
+        when(tokenService.generateToken(profissional)).thenReturn("novo-jwt-token");
+
+        TokenResponseDTO response = authService.refresh("mock-refresh-token");
+
+        assertNotNull(response);
+        assertEquals("novo-jwt-token", response.token());
+        assertEquals("novo-refresh-token", response.refreshToken());
+    }
+
+    @Test
+    void deveLancarExcecaoAoRenovarComTokenNuloOuVazio() {
+        assertThrows(UnauthorizedException.class, () -> authService.refresh(null));
+        assertThrows(UnauthorizedException.class, () -> authService.refresh("   "));
+    }
+
+    @Test
+    void deveLancarExcecaoAoRenovarComTokenNaoEncontrado() {
+        when(refreshTokenService.findByToken("inexistente")).thenReturn(Optional.empty());
+
+        assertThrows(UnauthorizedException.class, () -> authService.refresh("inexistente"));
+    }
+
+    @Test
+    void deveFazerLogoutRevogandoToken() {
+        authService.logout("mock-refresh-token");
+
+        verify(refreshTokenService, times(1)).revokeToken("mock-refresh-token");
     }
 
     @Test
