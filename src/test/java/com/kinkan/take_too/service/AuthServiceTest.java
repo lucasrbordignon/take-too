@@ -145,15 +145,19 @@ class AuthServiceTest {
     }
 
     @Test
-    void deveLancarExcecaoAoGerarMagicLinkSeEstiverInativo() {
+    void deveReativarMagicLinkEGerarTokenSeEstiverInativo() {
         projeto.setMagicLinkAtivo(false);
 
         when(projetoRepository.findByIdAndProfissional_Id(Objects.requireNonNull(projetoId), Objects.requireNonNull(profissionalId)))
                 .thenReturn(Optional.of(projeto));
+        when(tokenService.generateClientToken(cliente, projetoId)).thenReturn("novo-client-token");
 
-        assertThrows(IllegalStateException.class, () ->
-                authService.generateMagicLinkToken(Objects.requireNonNull(profissionalId), Objects.requireNonNull(projetoId)));
+        TokenResponseDTO response = authService.generateMagicLinkToken(Objects.requireNonNull(profissionalId), Objects.requireNonNull(projetoId));
 
-        verify(tokenService, never()).generateClientToken(any(), any());
+        assertNotNull(response);
+        assertEquals("novo-client-token", response.token());
+        assertTrue(projeto.isMagicLinkAtivo());
+        verify(projetoRepository).save(projeto);
+        verify(tokenService).generateClientToken(cliente, projetoId);
     }
 }

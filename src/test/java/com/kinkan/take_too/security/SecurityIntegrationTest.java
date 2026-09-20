@@ -145,4 +145,33 @@ class SecurityIntegrationTest {
                 .header("Authorization", "Bearer " + tokenMismatched))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    void gerarNovoMagicLinkDeveReativarProjetoRevogado() throws Exception {
+        projeto.setMagicLinkAtivo(false);
+        projetoRepository.save(projeto);
+
+        mockMvc.perform(get("/api/portal/projetos/" + projeto.getId())
+                .header("Authorization", "Bearer " + tokenCliente))
+                .andExpect(status().isForbidden());
+
+        var result = mockMvc.perform(post("/api/auth/magic-link")
+                .header("Authorization", "Bearer " + tokenProfissional)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"projetoId\":\"" + projeto.getId() + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").exists())
+                .andReturn();
+
+        var projetoAtualizado = projetoRepository.findById(projeto.getId()).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertTrue(projetoAtualizado.isMagicLinkAtivo());
+
+        String responseString = result.getResponse().getContentAsString();
+        com.fasterxml.jackson.databind.JsonNode rootNode = new com.fasterxml.jackson.databind.ObjectMapper().readTree(responseString);
+        String novoTokenCliente = rootNode.get("token").asText();
+
+        mockMvc.perform(get("/api/portal/projetos/" + projeto.getId())
+                .header("Authorization", "Bearer " + novoTokenCliente))
+                .andExpect(status().isOk());
+    }
 }

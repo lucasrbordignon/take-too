@@ -56,12 +56,14 @@ public class AuthService {
         return new TokenResponseDTO(token);
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public TokenResponseDTO generateMagicLinkToken(@org.springframework.lang.NonNull UUID profissionalId, @org.springframework.lang.NonNull UUID projetoId) {
         Projeto projeto = projetoRepository.findByIdAndProfissional_Id(projetoId, profissionalId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado ou acesso negado."));
 
         if (!projeto.isMagicLinkAtivo()) {
-            throw new IllegalStateException("Magic Link está inativo ou revogado para este projeto.");
+            projeto.setMagicLinkAtivo(true);
+            projetoRepository.save(projeto);
         }
 
         Cliente cliente = projeto.getCliente();
