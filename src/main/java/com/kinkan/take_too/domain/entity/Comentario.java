@@ -32,4 +32,7 @@ public class Comentario {
 
     @Column(nullable = false)
     private Boolean resolvido = false;
+
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    private java.time.Instant criadoEm = java.time.Instant.now();
 }

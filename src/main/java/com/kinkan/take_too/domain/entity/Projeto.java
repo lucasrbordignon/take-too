@@ -36,6 +36,17 @@ public class Projeto {
     @Column(nullable = false)
     private boolean magicLinkAtivo = true;
 
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    private java.time.Instant criadoEm = java.time.Instant.now();
+
+    @Column(name = "atualizado_em", nullable = false)
+    private java.time.Instant atualizadoEm = java.time.Instant.now();
+
+    @PreUpdate
+    public void preUpdate() {
+        this.atualizadoEm = java.time.Instant.now();
+    }
+
     @OneToMany(mappedBy = "projeto", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Versao> versoes = new ArrayList<>();
 }

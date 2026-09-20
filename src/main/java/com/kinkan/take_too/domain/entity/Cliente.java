@@ -27,6 +27,9 @@ public class Cliente {
     @Column
     private String email;
 
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    private java.time.Instant criadoEm = java.time.Instant.now();
+
     @ManyToMany(mappedBy = "clientes")
     private List<Profissional> profissionais = new ArrayList<>();
 }

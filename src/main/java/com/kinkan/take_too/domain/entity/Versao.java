@@ -32,6 +32,9 @@ public class Versao {
     @Column(nullable = false)
     private StatusVersao status;
 
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    private java.time.Instant criadoEm = java.time.Instant.now();
+
     @OneToMany(mappedBy = "versao", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comentario> comentarios = new ArrayList<>();
 }

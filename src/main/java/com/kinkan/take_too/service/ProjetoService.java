@@ -72,8 +72,16 @@ public class ProjetoService {
                 projeto.getCliente().getId(),
                 projeto.getCliente().getNome(),
                 projeto.getCliente().getTelefone(),
-                projeto.getCliente().getEmail());
-        return new ProjetoDTO(projeto.getId(), projeto.getNome(), projeto.getEtapaAtual(), clienteDTO);
+                projeto.getCliente().getEmail(),
+                projeto.getCliente().getCriadoEm());
+        return new ProjetoDTO(
+                projeto.getId(),
+                projeto.getNome(),
+                projeto.getEtapaAtual(),
+                clienteDTO,
+                projeto.getCriadoEm(),
+                projeto.getAtualizadoEm(),
+                projeto.isMagicLinkAtivo());
     }
 
     @Transactional

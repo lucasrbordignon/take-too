@@ -51,9 +51,18 @@ public class PortalClienteService {
                 projeto.getCliente().getId(),
                 projeto.getCliente().getNome(),
                 projeto.getCliente().getTelefone(),
-                projeto.getCliente().getEmail()
+                projeto.getCliente().getEmail(),
+                projeto.getCliente().getCriadoEm()
         );
-        return new ProjetoDTO(projeto.getId(), projeto.getNome(), projeto.getEtapaAtual(), clienteDTO);
+        return new ProjetoDTO(
+                projeto.getId(),
+                projeto.getNome(),
+                projeto.getEtapaAtual(),
+                clienteDTO,
+                projeto.getCriadoEm(),
+                projeto.getAtualizadoEm(),
+                projeto.isMagicLinkAtivo()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -62,7 +71,7 @@ public class PortalClienteService {
         
         return versaoRepository.findByProjeto_IdOrderByNumeroAsc(projetoId)
                 .stream()
-                .map(v -> new VersaoDTO(v.getId(), v.getNumero(), v.getArquivoUrl(), v.getStatus().name()))
+                .map(v -> new VersaoDTO(v.getId(), v.getNumero(), v.getArquivoUrl(), v.getStatus().name(), v.getCriadoEm()))
                 .toList();
     }
 
@@ -88,7 +97,8 @@ public class PortalClienteService {
                 salvo.getId(),
                 salvo.getTexto(),
                 salvo.getTimestampSegundos(),
-                "CLIENTE"
+                "CLIENTE",
+                salvo.getCriadoEm()
         );
     }
 
@@ -105,7 +115,8 @@ public class PortalClienteService {
                         c.getId(),
                         c.getTexto(),
                         c.getTimestampSegundos(),
-                        c.getClienteAutor() == null ? "PROFISSIONAL" : "CLIENTE"
+                        c.getClienteAutor() == null ? "PROFISSIONAL" : "CLIENTE",
+                        c.getCriadoEm()
                 ))
                 .toList();
     }

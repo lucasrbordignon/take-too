@@ -53,6 +53,7 @@ public class ComentarioService {
                 comentario.getId(),
                 comentario.getTexto(),
                 comentario.getTimestampSegundos(),
-                comentario.getClienteAutor() == null ? "PROFISSIONAL" : "CLIENTE");
+                comentario.getClienteAutor() == null ? "PROFISSIONAL" : "CLIENTE",
+                comentario.getCriadoEm());
     }
 }

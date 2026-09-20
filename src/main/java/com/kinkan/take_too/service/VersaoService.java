@@ -68,6 +68,6 @@ public class VersaoService {
     }
 
     private VersaoDTO toDTO(Versao versao) {
-        return new VersaoDTO(versao.getId(), versao.getNumero(), versao.getArquivoUrl(), versao.getStatus().name());
+        return new VersaoDTO(versao.getId(), versao.getNumero(), versao.getArquivoUrl(), versao.getStatus().name(), versao.getCriadoEm());
     }
 }
