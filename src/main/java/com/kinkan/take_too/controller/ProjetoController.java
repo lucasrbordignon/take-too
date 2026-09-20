@@ -63,4 +63,12 @@ public class ProjetoController {
         projetoService.revogarMagicLink(user.getId(), id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/{id}/atividades")
+    @Operation(summary = "Lista o feed cronológico de atividades do projeto")
+    public ResponseEntity<List<com.kinkan.take_too.domain.dto.AtividadeDTO>> listarAtividades(
+            @AuthenticationPrincipal @NonNull CustomUserDetails user,
+            @PathVariable @NonNull UUID id) {
+        return ResponseEntity.ok(projetoService.listarAtividades(user.getId(), id));
+    }
 }

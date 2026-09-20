@@ -100,6 +100,7 @@ GRAVACAO_CONCLUIDA -> EM_EDICAO -> REVISAO_CLIENTE -> APROVADO -> ENTREGUE
 - `GET /api/clientes/{id}`
 - `GET` e `POST /api/projetos`
 - `GET /api/projetos/{id}`
+- `GET /api/projetos/{id}/atividades`
 - `PATCH /api/projetos/{id}/status`
 - `POST /api/projetos/{id}/revogar-link`
 - `GET` e `POST /api/projetos/{projetoId}/versoes`

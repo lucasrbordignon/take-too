@@ -1,23 +1,31 @@
 package com.kinkan.take_too.service;
 
+import com.kinkan.take_too.domain.dto.AtividadeDTO;
 import com.kinkan.take_too.domain.dto.ClienteDTO;
 import com.kinkan.take_too.domain.dto.ProjetoCreateDTO;
 import com.kinkan.take_too.domain.dto.ProjetoDTO;
 import com.kinkan.take_too.domain.entity.Cliente;
+import com.kinkan.take_too.domain.entity.Comentario;
 import com.kinkan.take_too.domain.entity.Profissional;
 import com.kinkan.take_too.domain.entity.Projeto;
+import com.kinkan.take_too.domain.entity.Versao;
 import com.kinkan.take_too.domain.enums.EtapaProjeto;
+import com.kinkan.take_too.domain.enums.StatusVersao;
 import com.kinkan.take_too.exception.ForbiddenException;
 import com.kinkan.take_too.exception.ResourceNotFoundException;
 import com.kinkan.take_too.repository.ClienteRepository;
+import com.kinkan.take_too.repository.ComentarioRepository;
 import com.kinkan.take_too.repository.ProfissionalRepository;
 import com.kinkan.take_too.repository.ProjetoRepository;
+import com.kinkan.take_too.repository.VersaoRepository;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,7 +36,8 @@ public class ProjetoService {
     private final ProjetoRepository projetoRepository;
     private final ClienteRepository clienteRepository;
     private final ProfissionalRepository profissionalRepository;
-    private final com.kinkan.take_too.repository.VersaoRepository versaoRepository;
+    private final VersaoRepository versaoRepository;
+    private final ComentarioRepository comentarioRepository;
 
     @Transactional(readOnly = true)
     public List<ProjetoDTO> listarProjetos(@NonNull UUID profissionalId) {
@@ -119,5 +128,107 @@ public class ProjetoService {
 
         projeto.setMagicLinkAtivo(false);
         projetoRepository.save(projeto);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AtividadeDTO> listarAtividades(@NonNull UUID profissionalId, @NonNull UUID projetoId) {
+        Projeto projeto = projetoRepository.findByIdAndProfissional_Id(projetoId, profissionalId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Projeto não encontrado ou não pertence a este profissional"));
+
+        List<AtividadeDTO> atividades = new ArrayList<>();
+
+        // 1. Evento de criação do projeto
+        atividades.add(new AtividadeDTO(
+                "proj-" + projeto.getId(),
+                "PROJETO_CRIADO",
+                "Projeto criado",
+                "Projeto iniciado com o cliente " + projeto.getCliente().getNome(),
+                projeto.getProfissional().getNome(),
+                "PROFISSIONAL",
+                projeto.getCriadoEm(),
+                null,
+                null,
+                null
+        ));
+
+        // 2. Versões e comentários vinculados
+        List<Versao> versoes = versaoRepository.findByProjeto_IdOrderByNumeroAsc(projetoId);
+        for (Versao versao : versoes) {
+            atividades.add(new AtividadeDTO(
+                    "ver-" + versao.getId(),
+                    "VERSAO_PUBLICADA",
+                    "Versão " + versao.getNumero() + " publicada",
+                    "Nova versão disponível para avaliação",
+                    projeto.getProfissional().getNome(),
+                    "PROFISSIONAL",
+                    versao.getCriadoEm(),
+                    versao.getId(),
+                    versao.getNumero(),
+                    null
+            ));
+
+            if (versao.getStatus() == StatusVersao.APROVADA) {
+                atividades.add(new AtividadeDTO(
+                        "status-" + versao.getId(),
+                        "VERSAO_APROVADA",
+                        "Versão " + versao.getNumero() + " aprovada",
+                        "O cliente aprovou esta versão do projeto",
+                        projeto.getCliente().getNome(),
+                        "CLIENTE",
+                        versao.getCriadoEm().plusSeconds(1),
+                        versao.getId(),
+                        versao.getNumero(),
+                        null
+                ));
+            } else if (versao.getStatus() == StatusVersao.REJEITADA) {
+                atividades.add(new AtividadeDTO(
+                        "status-" + versao.getId(),
+                        "VERSAO_REJEITADA",
+                        "Versão " + versao.getNumero() + " precisa de ajustes",
+                        "O cliente solicitou alterações nesta versão",
+                        projeto.getCliente().getNome(),
+                        "CLIENTE",
+                        versao.getCriadoEm().plusSeconds(1),
+                        versao.getId(),
+                        versao.getNumero(),
+                        null
+                ));
+            }
+
+            List<Comentario> comentarios = comentarioRepository.findByVersao_IdOrderByTimestampSegundosAsc(versao.getId());
+            for (Comentario c : comentarios) {
+                boolean isCliente = c.getClienteAutor() != null;
+                String autorNome = isCliente ? c.getClienteAutor().getNome() : projeto.getProfissional().getNome();
+                String autorTipo = isCliente ? "CLIENTE" : "PROFISSIONAL";
+                String timecodeStr = formatTimecode(c.getTimestampSegundos());
+
+                atividades.add(new AtividadeDTO(
+                        "com-" + c.getId(),
+                        "COMENTARIO_ADICIONADO",
+                        (isCliente ? "Cliente comentou" : "Comentário do editor") + " aos " + timecodeStr,
+                        c.getTexto(),
+                        autorNome,
+                        autorTipo,
+                        c.getCriadoEm(),
+                        versao.getId(),
+                        versao.getNumero(),
+                        c.getTimestampSegundos()
+                ));
+            }
+        }
+
+        // Ordena cronologicamente: do mais recente para o mais antigo
+        atividades.sort(Comparator.comparing(AtividadeDTO::timestamp).reversed());
+        return atividades;
+    }
+
+    private String formatTimecode(Integer totalSeconds) {
+        if (totalSeconds == null || totalSeconds <= 0) {
+            return "00:00";
+        }
+        int mins = totalSeconds / 60;
+        int secs = totalSeconds % 60;
+        return String.format("%02d:%02d", mins, secs);
     }
 }

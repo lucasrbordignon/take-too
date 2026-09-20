@@ -253,4 +253,14 @@ class SecurityIntegrationTest {
                 .content("{}"))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void profissionalDeveListarAtividadesDoProjeto() throws Exception {
+        mockMvc.perform(get("/api/projetos/" + projeto.getId() + "/atividades")
+                .header("Authorization", "Bearer " + tokenProfissional))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].tipo").value("PROJETO_CRIADO"))
+                .andExpect(jsonPath("$[0].titulo").value("Projeto criado"));
+    }
 }

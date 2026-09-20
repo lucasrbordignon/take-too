@@ -18,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,6 +41,9 @@ class ProjetoServiceTest {
 
     @Mock
     private VersaoRepository versaoRepository;
+
+    @Mock
+    private com.kinkan.take_too.repository.ComentarioRepository comentarioRepository;
 
     @InjectMocks
     private ProjetoService projetoService;
@@ -184,5 +188,45 @@ class ProjetoServiceTest {
 
         assertFalse(projeto.isMagicLinkAtivo());
         verify(projetoRepository, times(1)).save(projeto);
+    }
+
+    @Test
+    void deveListarAtividadesDoProjetoComSucesso() {
+        UUID pId = UUID.randomUUID();
+        Projeto p = new Projeto();
+        p.setId(pId);
+        p.setNome("Projeto Atividades");
+        p.setProfissional(profissional);
+        p.setCliente(cliente);
+
+        when(projetoRepository.findByIdAndProfissional_Id(pId, profissionalId)).thenReturn(Optional.of(p));
+
+        Versao v1 = new Versao();
+        v1.setId(UUID.randomUUID());
+        v1.setNumero(1);
+        v1.setStatus(com.kinkan.take_too.domain.enums.StatusVersao.APROVADA);
+        v1.setProjeto(p);
+
+        when(versaoRepository.findByProjeto_IdOrderByNumeroAsc(pId)).thenReturn(List.of(v1));
+
+        com.kinkan.take_too.domain.entity.Comentario c = new com.kinkan.take_too.domain.entity.Comentario();
+        c.setId(UUID.randomUUID());
+        c.setTexto("Aprovado o corte inicial");
+        c.setTimestampSegundos(30);
+        c.setClienteAutor(cliente);
+        c.setVersao(v1);
+
+        when(comentarioRepository.findByVersao_IdOrderByTimestampSegundosAsc(v1.getId())).thenReturn(List.of(c));
+
+        var atividades = projetoService.listarAtividades(profissionalId, pId);
+
+        assertNotNull(atividades);
+        assertFalse(atividades.isEmpty());
+        // Deve conter: PROJETO_CRIADO, VERSAO_PUBLICADA, VERSAO_APROVADA, COMENTARIO_ADICIONADO
+        assertEquals(4, atividades.size());
+        assertTrue(atividades.stream().anyMatch(a -> "PROJETO_CRIADO".equals(a.tipo())));
+        assertTrue(atividades.stream().anyMatch(a -> "VERSAO_PUBLICADA".equals(a.tipo())));
+        assertTrue(atividades.stream().anyMatch(a -> "VERSAO_APROVADA".equals(a.tipo())));
+        assertTrue(atividades.stream().anyMatch(a -> "COMENTARIO_ADICIONADO".equals(a.tipo())));
     }
 }
