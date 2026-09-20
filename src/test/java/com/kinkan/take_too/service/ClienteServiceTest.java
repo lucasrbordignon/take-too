@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,6 +31,9 @@ class ClienteServiceTest {
 
     @Mock
     private ProfissionalRepository profissionalRepository;
+
+    @Mock
+    private com.kinkan.take_too.repository.ProjetoRepository projetoRepository;
 
     @InjectMocks
     private ClienteService clienteService;
@@ -132,5 +136,55 @@ class ClienteServiceTest {
                 clienteService.criarCliente(Objects.requireNonNull(profissionalId), dto));
 
         verify(clienteRepository, never()).save(any());
+    }
+
+    @Test
+    void deveListarClientesComTotalDeProjetosEDataDeAtividade() {
+        Cliente c = new Cliente();
+        c.setId(UUID.randomUUID());
+        c.setNome("Cliente Alpha");
+        c.setTelefone("5511999998888");
+        c.setEmail("alpha@teste.com");
+        c.setCriadoEm(java.time.Instant.now().minus(10, java.time.temporal.ChronoUnit.DAYS));
+
+        com.kinkan.take_too.domain.entity.Projeto p = new com.kinkan.take_too.domain.entity.Projeto();
+        p.setId(UUID.randomUUID());
+        p.setNome("Projeto Vídeo Alpha");
+        p.setCliente(c);
+        p.setCriadoEm(java.time.Instant.now().minus(5, java.time.temporal.ChronoUnit.DAYS));
+        p.setAtualizadoEm(java.time.Instant.now().minus(1, java.time.temporal.ChronoUnit.DAYS));
+
+        when(clienteRepository.findByProfissionais_Id(profissionalId)).thenReturn(List.of(c));
+        when(projetoRepository.findByProfissional_Id(profissionalId)).thenReturn(List.of(p));
+
+        var lista = clienteService.listarClientes(profissionalId);
+
+        assertNotNull(lista);
+        assertEquals(1, lista.size());
+        ClienteDTO dto = lista.get(0);
+        assertEquals("Cliente Alpha", dto.nome());
+        assertEquals(1, dto.totalProjetos());
+        assertNotNull(dto.ultimaAtividadeEm());
+        assertEquals(p.getAtualizadoEm(), dto.ultimaAtividadeEm());
+    }
+
+    @Test
+    void deveBuscarClientePorIdComSucesso() {
+        UUID clienteId = UUID.randomUUID();
+        Cliente c = new Cliente();
+        c.setId(clienteId);
+        c.setNome("Cliente Beta");
+        c.setTelefone("5511977776666");
+        c.setCriadoEm(java.time.Instant.now().minus(3, java.time.temporal.ChronoUnit.DAYS));
+
+        when(clienteRepository.findByIdAndProfissionais_Id(clienteId, profissionalId)).thenReturn(Optional.of(c));
+        when(projetoRepository.findByProfissional_Id(profissionalId)).thenReturn(List.of());
+
+        var dto = clienteService.buscarPorId(profissionalId, clienteId);
+
+        assertNotNull(dto);
+        assertEquals("Cliente Beta", dto.nome());
+        assertEquals(0, dto.totalProjetos());
+        assertEquals(c.getCriadoEm(), dto.ultimaAtividadeEm());
     }
 }
