@@ -76,7 +76,7 @@ public class ProjetoService {
         return toDTO(projeto);
     }
 
-    private ProjetoDTO toDTO(Projeto projeto) {
+    public ProjetoDTO toDTO(Projeto projeto) {
         ClienteDTO clienteDTO = new ClienteDTO(
                 projeto.getCliente().getId(),
                 projeto.getCliente().getNome(),

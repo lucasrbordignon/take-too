@@ -41,6 +41,7 @@ public class SecurityConfig {
                         // Rotas restritas ao Profissional
                         .requestMatchers(HttpMethod.POST, "/api/auth/magic-link").hasRole("PROFISSIONAL")
                         .requestMatchers("/api/profissionais/**").hasRole("PROFISSIONAL")
+                        .requestMatchers("/api/dashboard/**").hasRole("PROFISSIONAL")
                         .requestMatchers("/api/clientes/**").hasRole("PROFISSIONAL")
                         .requestMatchers("/api/projetos/**").hasRole("PROFISSIONAL")
                         .requestMatchers("/api/versoes/**").hasRole("PROFISSIONAL")

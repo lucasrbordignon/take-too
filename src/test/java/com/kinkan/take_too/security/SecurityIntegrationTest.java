@@ -263,4 +263,20 @@ class SecurityIntegrationTest {
                 .andExpect(jsonPath("$[0].tipo").value("PROJETO_CRIADO"))
                 .andExpect(jsonPath("$[0].titulo").value("Projeto criado"));
     }
+
+    @Test
+    void profissionalDeveObterMetricasDoDashboard() throws Exception {
+        mockMvc.perform(get("/api/dashboard/metricas")
+                .header("Authorization", "Bearer " + tokenProfissional))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalProjetos").isNumber())
+                .andExpect(jsonPath("$.projetosEmAndamento").isNumber())
+                .andExpect(jsonPath("$.aguardandoAprovacao").isNumber())
+                .andExpect(jsonPath("$.concluidos").isNumber())
+                .andExpect(jsonPath("$.totalClientes").isNumber())
+                .andExpect(jsonPath("$.projetosNovosEstaSemana").isNumber())
+                .andExpect(jsonPath("$.aguardandoMaisDeDoisDias").isNumber())
+                .andExpect(jsonPath("$.concluidosEsteMes").isNumber())
+                .andExpect(jsonPath("$.projetosRecentes").isArray());
+    }
 }
