@@ -1,7 +1,9 @@
 package com.kinkan.take_too.service;
 
+import com.kinkan.take_too.domain.dto.ComentarioDTO;
 import com.kinkan.take_too.domain.dto.ProjetoDTO;
 import com.kinkan.take_too.domain.entity.Cliente;
+import com.kinkan.take_too.domain.entity.Comentario;
 import com.kinkan.take_too.domain.entity.Projeto;
 import com.kinkan.take_too.domain.entity.Versao;
 import com.kinkan.take_too.domain.enums.EtapaProjeto;
@@ -151,5 +153,46 @@ class PortalClienteServiceTest {
 
         assertThrows(ForbiddenException.class, () ->
                 portalClienteService.buscarProjeto(Objects.requireNonNull(outroProjetoId), Objects.requireNonNull(projetoId)));
+    }
+
+    @Test
+    void deveListarComentariosDaVersaoParaClienteComSucesso() {
+        when(versaoRepository.findById(Objects.requireNonNull(versaoId))).thenReturn(Optional.of(versao));
+
+        Comentario c1 = new Comentario();
+        c1.setId(UUID.randomUUID());
+        c1.setTexto("Comentário do profissional");
+        c1.setTimestampSegundos(5);
+        c1.setClienteAutor(null);
+        c1.setVersao(versao);
+
+        Comentario c2 = new Comentario();
+        c2.setId(UUID.randomUUID());
+        c2.setTexto("Comentário do cliente");
+        c2.setTimestampSegundos(15);
+        c2.setClienteAutor(cliente);
+        c2.setVersao(versao);
+
+        when(comentarioRepository.findByVersao_IdOrderByTimestampSegundosAsc(versaoId)).thenReturn(java.util.List.of(c1, c2));
+
+        var comentarios = portalClienteService.listarComentarios(Objects.requireNonNull(projetoId), Objects.requireNonNull(versaoId));
+
+        assertNotNull(comentarios);
+        assertEquals(2, comentarios.size());
+        assertEquals("PROFISSIONAL", comentarios.get(0).autorTipo());
+        assertEquals(5, comentarios.get(0).timestampSegundos());
+        assertEquals("CLIENTE", comentarios.get(1).autorTipo());
+        assertEquals(15, comentarios.get(1).timestampSegundos());
+    }
+
+    @Test
+    void deveBloquearListagemDeComentariosSeVersaoPertencerAOutroProjeto() {
+        UUID outroProjetoId = UUID.randomUUID();
+        when(versaoRepository.findById(Objects.requireNonNull(versaoId))).thenReturn(Optional.of(versao));
+
+        assertThrows(ForbiddenException.class, () ->
+                portalClienteService.listarComentarios(Objects.requireNonNull(outroProjetoId), Objects.requireNonNull(versaoId)));
+
+        verify(comentarioRepository, never()).findByVersao_IdOrderByTimestampSegundosAsc(any());
     }
 }

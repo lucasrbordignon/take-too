@@ -56,6 +56,14 @@ public class PortalClienteController {
                         Objects.requireNonNull(user.getProjetoIdAcesso()), versaoId, Objects.requireNonNull(dto)));
     }
 
+    @GetMapping("/versoes/{versaoId}/comentarios")
+    @Operation(summary = "Lista os comentários de uma versão para o cliente")
+    public ResponseEntity<List<ComentarioDTO>> listarComentarios(@AuthenticationPrincipal CustomUserDetails user,
+            @NonNull @PathVariable UUID versaoId) {
+        return ResponseEntity.ok(portalClienteService.listarComentarios(
+                Objects.requireNonNull(user.getProjetoIdAcesso()), versaoId));
+    }
+
     @PatchMapping("/versoes/{versaoId}/status")
     @Operation(summary = "Permite ao cliente Aprovar ou Rejeitar a versão")
     public ResponseEntity<Void> alterarStatusVersao(@AuthenticationPrincipal CustomUserDetails user,

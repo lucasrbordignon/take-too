@@ -108,7 +108,7 @@ GRAVACAO_CONCLUIDA -> EM_EDICAO -> REVISAO_CLIENTE -> APROVADO -> ENTREGUE
 
 - `GET /api/portal/projetos/{projetoId}`
 - `GET /api/portal/projetos/{projetoId}/versoes`
-- `POST /api/portal/versoes/{versaoId}/comentarios`
+- `GET` e `POST /api/portal/versoes/{versaoId}/comentarios`
 - `PATCH /api/portal/versoes/{versaoId}/status`
 
 ## Testes

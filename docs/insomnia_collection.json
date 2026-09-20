@@ -461,6 +461,20 @@
       "metaSortKey": 30
     },
     {
+      "_id": "req_portal_listar_comentarios",
+      "_type": "request",
+      "parentId": "fld_portal",
+      "name": "[Portal] Listar Comentários da Versão",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/portal/versoes/{{ _.versao_id }}/comentarios",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_cliente }}"
+      },
+      "metaSortKey": 35
+    },
+    {
       "_id": "req_portal_status",
       "_type": "request",
       "parentId": "fld_portal",

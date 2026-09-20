@@ -92,6 +92,24 @@ public class PortalClienteService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public List<ComentarioDTO> listarComentarios(@NonNull UUID projetoIdAcesso, @NonNull UUID versaoId) {
+        Versao versao = versaoRepository.findById(versaoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Versão não encontrada."));
+
+        validarAcesso(projetoIdAcesso, versao.getProjeto().getId());
+
+        return comentarioRepository.findByVersao_IdOrderByTimestampSegundosAsc(versaoId)
+                .stream()
+                .map(c -> new ComentarioDTO(
+                        c.getId(),
+                        c.getTexto(),
+                        c.getTimestampSegundos(),
+                        c.getClienteAutor() == null ? "PROFISSIONAL" : "CLIENTE"
+                ))
+                .toList();
+    }
+
     @Transactional
     public void alterarStatusVersao(@NonNull UUID projetoIdAcesso, @NonNull UUID versaoId, @NonNull StatusVersao novoStatus) {
         if (novoStatus != StatusVersao.APROVADA && novoStatus != StatusVersao.REJEITADA) {
