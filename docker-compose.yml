@@ -4,18 +4,20 @@ services:
     container_name: taketoo-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-taketoo}
-      POSTGRES_USER: ${DB_USERNAME:-admin}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB não definido}
+      POSTGRES_USER: ${DB_USERNAME:?DB_USERNAME não definido}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD não definido}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-admin} -d ${POSTGRES_DB:-taketoo}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USERNAME} -d ${POSTGRES_DB}"
+        ]
       interval: 5s
       timeout: 5s
-      retries: 5
-    ports:
-      - "127.0.0.1:5432:5432"
+      retries: 10
 
   api:
     build:
@@ -27,14 +29,14 @@ services:
       db:
         condition: service_healthy
     environment:
-      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-taketoo}
-      DB_USERNAME: ${DB_USERNAME:-admin}
-      DB_PASSWORD: ${DB_PASSWORD:-password}
-      JWT_SECRET: ${JWT_SECRET}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET não definido}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS não definido}
+      SPRING_PROFILES_ACTIVE: prod
     ports:
       - "127.0.0.1:8082:8080"
 
 volumes:
   postgres_data:
-

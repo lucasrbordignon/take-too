@@ -2,12 +2,11 @@ FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-# Cria usuário não-root por segurança
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-USER appuser
 
-# Copia o JAR pré-compilado gerado localmente ou pelo CI
-COPY target/*.jar app.jar
+COPY --chown=appuser:appgroup target/*.jar app.jar
+
+USER appuser
 
 EXPOSE 8080
 
