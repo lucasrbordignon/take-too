@@ -1,0 +1,11 @@
+.git
+.mvn
+src
+target/classes
+target/generated-sources
+target/maven-archiver
+target/maven-status
+target/surefire-reports
+target/test-classes
+*.md
+.vscode
