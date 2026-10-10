@@ -27,7 +27,10 @@
         "token_cliente": "",
         "cliente_id": "",
         "projeto_id": "",
-        "versao_id": ""
+        "versao_id": "",
+        "video_id": "",
+        "video_upload_url": "",
+        "video_origem": "http://localhost:5173"
       },
       "dataPropertyOrder": {
         "&": [
@@ -36,7 +39,10 @@
           "token_cliente",
           "cliente_id",
           "projeto_id",
-          "versao_id"
+          "versao_id",
+          "video_id",
+          "video_upload_url",
+          "video_origem"
         ]
       },
       "color": "#6366f1",
@@ -505,6 +511,180 @@
       "method": "GET",
       "url": "{{ _.baseUrl }}/api/ping",
       "metaSortKey": 10
+    },
+    {
+      "_id": "fld_videos",
+      "_type": "request_group",
+      "parentId": "wrk_taketoo",
+      "modified": 1726683600000,
+      "created": 1726683600000,
+      "name": "08. Vídeos independentes",
+      "description": "Fluxo paralelo ao legado. Configure VIDEO_ENABLED e credenciais Mux. Copie video.id e url da criação para video_id e video_upload_url.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 800
+    },
+    {
+      "_id": "req_video_create",
+      "_type": "request",
+      "parentId": "fld_videos",
+      "name": "Criar sessão de upload",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/videos/uploads",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Teste vertical\",\n  \"origem\": \"{{ _.video_origem }}\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 1,
+      "parameters": [],
+      "authentication": {},
+      "description": "Não altera projeto ou versão."
+    },
+    {
+      "_id": "req_video_list",
+      "_type": "request",
+      "parentId": "fld_videos",
+      "name": "Listar vídeos",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/videos?pagina=0&tamanho=20",
+      "body": {},
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "metaSortKey": 2,
+      "parameters": [],
+      "authentication": {},
+      "description": "Não altera projeto ou versão."
+    },
+    {
+      "_id": "req_video_get",
+      "_type": "request",
+      "parentId": "fld_videos",
+      "name": "Consultar vídeo",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/videos/{{ _.video_id }}",
+      "body": {},
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "metaSortKey": 3,
+      "parameters": [],
+      "authentication": {},
+      "description": "Não altera projeto ou versão."
+    },
+    {
+      "_id": "req_video_sync",
+      "_type": "request",
+      "parentId": "fld_videos",
+      "name": "Sincronizar estado",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/videos/{{ _.video_id }}/sincronizar",
+      "body": {},
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "metaSortKey": 4,
+      "parameters": [],
+      "authentication": {},
+      "description": "Não altera projeto ou versão."
+    },
+    {
+      "_id": "req_video_upload",
+      "_type": "request",
+      "parentId": "fld_videos",
+      "name": "Recuperar sessão de upload",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/videos/{{ _.video_id }}/upload",
+      "body": {},
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "metaSortKey": 5,
+      "parameters": [],
+      "authentication": {},
+      "description": "Não altera projeto ou versão."
+    },
+    {
+      "_id": "req_video_playback",
+      "_type": "request",
+      "parentId": "fld_videos",
+      "name": "Criar sessão HLS",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/videos/{{ _.video_id }}/playback",
+      "body": {},
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "metaSortKey": 6,
+      "parameters": [],
+      "authentication": {},
+      "description": "Não altera projeto ou versão."
+    },
+    {
+      "_id": "req_video_delete",
+      "_type": "request",
+      "parentId": "fld_videos",
+      "name": "Excluir vídeo independente",
+      "method": "DELETE",
+      "url": "{{ _.baseUrl }}/api/videos/{{ _.video_id }}",
+      "body": {},
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "metaSortKey": 7,
+      "parameters": [],
+      "authentication": {},
+      "description": "Não altera projeto ou versão."
+    },
+    {
+      "_id": "req_video_send",
+      "_type": "request",
+      "parentId": "fld_videos",
+      "name": "Enviar arquivo diretamente ao provedor",
+      "method": "PUT",
+      "url": "{{ _.video_upload_url }}",
+      "body": {
+        "mimeType": "application/octet-stream",
+        "fileName": ""
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/octet-stream"
+        }
+      ],
+      "metaSortKey": 8,
+      "parameters": [],
+      "authentication": {},
+      "description": "Selecione o arquivo binário no Insomnia. Copie url da criação para video_upload_url. Não envie Authorization/JWT do TakeToo. PUT simples; para chunks/retomada consulte docs/video-streaming.md."
     }
   ]
 }

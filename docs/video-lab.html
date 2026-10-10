@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TakeToo — Laboratório de vídeo</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #f5f5f3; color: #202124; font: 16px system-ui, sans-serif; }
+  main { max-width: 960px; margin: 32px auto; padding: 0 20px; }
+  h1 { font-size: 24px; } p { line-height: 1.5; }
+  .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  label { display: grid; gap: 6px; font-size: 14px; }
+  input, button { font: inherit; padding: 10px; border: 1px solid #bcbdb8; border-radius: 4px; }
+  input { min-width: 0; width: 100%; background: white; }
+  .full { grid-column: 1 / -1; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
+  button { cursor: pointer; background: white; }
+  button:disabled { opacity: .5; cursor: wait; }
+  #status { min-height: 28px; overflow-wrap: anywhere; }
+  video { display: block; width: 100%; max-height: 65vh; object-fit: contain; background: #101010; margin: 16px 0; }
+  #metadata { font-size: 14px; }
+  @media (max-width: 600px) { .fields { grid-template-columns: 1fr; } main { margin: 20px auto; } }
+</style>
+<main>
+  <h1>Laboratório de vídeo</h1>
+  <p>Envie e reproduza um vídeo independente. Projetos, versões e revisão do cliente continuam no fluxo atual.</p>
+  <div class="fields">
+    <label>URL da API<input id="api" type="url" value="http://localhost:8080" autocomplete="off"></label>
+    <label>JWT do profissional<input id="token" type="password" autocomplete="off" placeholder="Cole o token do login"></label>
+    <label class="full">Arquivo de vídeo<input id="file" type="file" accept="video/*"></label>
+    <label>Nome do vídeo<input id="name" maxlength="255" placeholder="Opcional: usa o nome do arquivo"></label>
+    <label>Logo PNG/JPG (opcional)<input id="watermark" type="url" placeholder="https://cdn.example.com/logo.png"></label>
+    <label class="full">ID do vídeo<input id="id" autocomplete="off" placeholder="Criado no upload ou cole um ID existente"></label>
+  </div>
+  <div class="actions">
+    <button id="upload" type="button">Criar e enviar</button>
+    <button id="refresh" type="button">Sincronizar estado</button>
+    <button id="play" type="button">Reproduzir / renovar sessão</button>
+  </div>
+  <p id="status" role="status" aria-live="polite">Pronto para validar o fluxo.</p>
+  <p id="metadata"></p>
+  <video id="player" controls playsinline preload="metadata" aria-label="Prévia do vídeo"></video>
+  <p>O envio desta página usa um PUT simples. Para arquivos grandes e retomada, use o protocolo retornado pela API, conforme a documentação. A marca opcional usa posição inferior direita, largura de 20% e opacidade de 70%.</p>
+</main>
+<script>
+  const byId = id => document.getElementById(id);
+  const player = byId('player');
+  let hls;
+  let hlsLoading;
+
+  function status(message) { byId('status').textContent = message; }
+  function videoId() {
+    const id = byId('id').value.trim();
+    if (!/^[0-9a-f-]{36}$/i.test(id)) throw new Error('Informe o ID do vídeo.');
+    return id;
+  }
+  async function api(path, method, body) {
+    const token = byId('token').value.trim().replace(/^Bearer\s+/i, '');
+    if (!token) throw new Error('Informe o JWT do profissional.');
+    const base = new URL(byId('api').value);
+    if (!['http:', 'https:'].includes(base.protocol)) throw new Error('URL da API inválida.');
+    const response = await fetch(base.origin + path, {
+      method, cache: 'no-store', credentials: 'omit',
+      headers: { Authorization: 'Bearer ' + token, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || 'A API recusou a operação (' + response.status + ').');
+    return result;
+  }
+  function metadata(video) {
+    byId('metadata').textContent = [video.nome, video.status, video.orientacao,
+      video.largura && video.altura ? video.largura + ' × ' + video.altura : '',
+      video.duracaoSegundos ? video.duracaoSegundos.toFixed(1) + ' s' : '', video.erro].filter(Boolean).join(' · ');
+    if (video.largura && video.altura) {
+      const parts = (video.proporcao || '').split(':').map(Number);
+      const ratio = parts.length === 2 && parts.every(n => n > 0) ? parts[0] / parts[1] : video.largura / video.altura;
+      player.style.aspectRatio = String(ratio);
+    }
+  }
+  async function run(operation) {
+    document.querySelectorAll('button').forEach(button => button.disabled = true);
+    try { await operation(); }
+    catch (error) { status(error.message || 'Não foi possível concluir a operação.'); }
+    finally { document.querySelectorAll('button').forEach(button => button.disabled = false); }
+  }
+  byId('upload').onclick = () => run(async () => {
+    const file = byId('file').files[0];
+    if (!file) throw new Error('Selecione um arquivo de vídeo.');
+    const body = { nome: byId('name').value.trim() || file.name, origem: location.origin };
+    if (byId('watermark').value.trim()) body.marcaDagua = {
+      imagemUrl: byId('watermark').value.trim(), posicao: 'INFERIOR_DIREITA',
+      larguraPercentual: 20, opacidadePercentual: 70, margemPercentual: 2
+    };
+    status('Criando upload…');
+    const upload = await api('/api/videos/uploads', 'POST', body);
+    byId('id').value = upload.video.id;
+    metadata(upload.video);
+    if (upload.protocolo !== 'HTTP_CONTENT_RANGE') throw new Error('Use um cliente compatível com o protocolo deste upload.');
+    status('Enviando arquivo. Aguarde…');
+    const response = await fetch(upload.url, { method: upload.metodo, body: file, credentials: 'omit',
+      headers: { ...upload.headers, 'Content-Type': file.type || 'application/octet-stream' } });
+    if (!response.ok) throw new Error('Envio recusado pelo provedor (' + response.status + '). Use a sessão existente para retomar.');
+    status('Envio concluído. Sincronize o estado até o vídeo ficar PRONTO.');
+  });
+  byId('refresh').onclick = () => run(async () => {
+    const video = await api('/api/videos/' + videoId() + '/sincronizar', 'POST');
+    metadata(video);
+    status(video.status === 'PRONTO' ? 'Vídeo pronto para reprodução.' : 'Estado atualizado: ' + video.status);
+  });
+  async function loadHls() {
+    if (!hlsLoading) hlsLoading = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.7.3/dist/hls.min.js';
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('Não foi possível carregar o player HLS.'));
+      document.head.appendChild(script);
+    });
+    await hlsLoading;
+  }
+  byId('play').onclick = () => run(async () => {
+    const playback = await api('/api/videos/' + videoId() + '/playback', 'POST');
+    metadata(playback.video);
+    if (hls) { hls.destroy(); hls = undefined; }
+    player.pause(); player.removeAttribute('src'); player.load();
+    if (player.canPlayType(playback.tipo)) player.src = playback.url;
+    else {
+      await loadHls();
+      if (!Hls.isSupported()) throw new Error('Este navegador não suporta HLS.');
+      hls = new Hls();
+      hls.on(Hls.Events.ERROR, (_, data) => {
+        if (data.fatal) status('Falha de reprodução. Sincronize o vídeo e renove a sessão.');
+      });
+      hls.loadSource(playback.url); hls.attachMedia(player);
+    }
+    status('Sessão pronta. Use os controles do player. Expira em ' + new Date(playback.expiraEm).toLocaleTimeString() + '.');
+  });
+</script>
+</html>

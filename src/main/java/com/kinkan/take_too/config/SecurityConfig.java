@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/webhooks/video/mux").permitAll()
                         .requestMatchers("/api/ping").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         // Rotas restritas ao Portal do Cliente (Magic Link)
@@ -49,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/projetos/**").hasRole("PROFISSIONAL")
                         .requestMatchers("/api/versoes/**").hasRole("PROFISSIONAL")
                         .requestMatchers("/api/comentarios/**").hasRole("PROFISSIONAL")
+                        .requestMatchers("/api/videos", "/api/videos/**").hasRole("PROFISSIONAL")
                         .anyRequest().authenticated())
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
