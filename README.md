@@ -158,6 +158,12 @@ O módulo `/api/videos` oferece upload direto e reprodução HLS privada, com Mu
 
 Consulte [configuração, endpoints e roteiro de validação](docs/video-streaming.md). Para testar visualmente vídeos verticais/paisagem, use o [laboratório local de vídeo](docs/video-lab.html). O Insomnia inclui o grupo **08. Vídeos independentes**.
 
+## Vídeos no projeto
+
+Projetos em edição podem iniciar uploads em rascunho e publicar versões por `videoId` pronto, incluindo uploads anteriores da biblioteca. Versões por `arquivoUrl` continuam disponíveis. O portal emite reprodução temporária após autorizar o projeto do magic link; vídeos publicados não podem ser excluídos.
+
+Consulte [contratos, roteiro de integração do frontend e exclusão](docs/videos-no-projeto.md). O Insomnia inclui **09. Vídeos no projeto**. A migration `V7` é aplicada ao iniciar a API; para gerar o JAR atualizado antes do deploy, execute `./mvnw clean package`.
+
 ## Testes
 
 ```bash
@@ -178,3 +184,5 @@ src/main/java/com/kinkan/take_too/
 ├── service/      # Regras de negócio
 └── util/         # Utilitários
 ```
+
+As sessões de playback também retornam `miniaturaUrl` opcional: uma imagem assinada para identificar vídeos na biblioteca e na seleção de versões. O Mux usa as mesmas credenciais de signing já configuradas. Consulte [vídeo e streaming](docs/video-streaming.md) para o contrato e autorização.

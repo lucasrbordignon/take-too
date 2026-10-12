@@ -4,6 +4,7 @@ import com.kinkan.take_too.domain.enums.StatusVideo;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -18,6 +19,11 @@ public class VideoAsset {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "profissional_id", nullable = false)
     private Profissional profissional;
+
+    @Nullable
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "projeto_rascunho_id")
+    private Projeto projetoRascunho;
 
     @Column(nullable = false)
     private String nome;

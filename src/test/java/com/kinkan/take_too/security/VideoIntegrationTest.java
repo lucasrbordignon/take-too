@@ -275,6 +275,184 @@ class VideoIntegrationTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void devePublicarUploadAnteriorEReproduzirNoPortalSemAbrirBiblioteca() throws Exception {
+        UUID id = createReadyVideo();
+        String version = publish(id);
+        mvc.perform(get("/api/portal/projetos/" + projeto.getId() + "/versoes")
+                .header("Authorization", bearer(clientToken)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].videoId").value(id.toString()))
+                .andExpect(jsonPath("$[0].video.orientacao").value("VERTICAL"))
+                .andExpect(jsonPath("$[0].tipoMidia").value("VIDEO"))
+                .andExpect(jsonPath("$[0].arquivoUrl").isEmpty());
+        mvc.perform(post("/api/portal/versoes/" + version + "/playback").header("Authorization", bearer(clientToken)))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.url").value("https://fake.example.com/signed.m3u8"));
+        mvc.perform(post("/api/projetos/" + projeto.getId() + "/versoes/" + version + "/playback")
+                .header("Authorization", bearer(token))).andExpect(status().isOk());
+        mvc.perform(post("/api/videos/" + id + "/playback").header("Authorization", bearer(clientToken)))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/api/portal/versoes/" + version + "/comentarios").header("Authorization", bearer(clientToken))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"texto\":\"Ajustar corte\",\"tempoVideo\":12}"))
+                .andExpect(status().isCreated());
+        mvc.perform(patch("/api/portal/versoes/" + version + "/status").header("Authorization", bearer(clientToken))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"REJEITADA\"}"))
+                .andExpect(status().isNoContent());
+        assertEquals(EtapaProjeto.EM_EDICAO, projetos.findById(projeto.getId()).orElseThrow().getEtapaAtual());
+        // A mesma mídia pode ser usada novamente pelo dono; o histórico permanece.
+        publish(id);
+        assertEquals(2, versoes.findByProjeto_IdOrderByNumeroAsc(projeto.getId()).size());
+    }
+
+    @Test
+    void deveBloquearExclusaoDeVideoPublicadoSemChamarProvedor() throws Exception {
+        UUID id = createReadyVideo();
+        publish(id);
+        mvc.perform(delete("/api/videos/" + id).header("Authorization", bearer(token)))
+                .andExpect(status().isBadRequest());
+        assertFalse(fake.deletions.containsKey(id));
+        assertEquals(StatusVideo.PRONTO, videos.findById(id).orElseThrow().getStatus());
+    }
+
+    @Test
+    void deveRejeitarPublicacaoSemVideoProntoOuDeOutroProfissional() throws Exception {
+        UUID id = createVideo();
+        publishRequest(id, token).andExpect(status().isBadRequest());
+        fake.snapshots.put(id, ready(id, 1920, 1080, "16:9"));
+        sync(id);
+        VideoAsset video = videos.findById(id).orElseThrow();
+        video.setProfissional(professional());
+        videos.save(video);
+        publishRequest(id, token).andExpect(status().isNotFound());
+        assertTrue(versoes.findByProjeto_IdOrderByNumeroAsc(projeto.getId()).isEmpty());
+        assertEquals(EtapaProjeto.EM_EDICAO, projetos.findById(projeto.getId()).orElseThrow().getEtapaAtual());
+    }
+
+    @Test
+    void deveRejeitarOrigensAmbiguasOuVazias() throws Exception {
+        for (String body : new String[]{"{}", "{\"arquivoUrl\":\"\"}",
+                "{\"arquivoUrl\":\"https://example.com/v.mp4\",\"videoId\":\"" + UUID.randomUUID() + "\"}",
+                "{\"arquivoUrl\":\"\",\"videoId\":\"" + UUID.randomUUID() + "\"}"}) {
+            mvc.perform(post("/api/projetos/" + projeto.getId() + "/versoes").header("Authorization", bearer(token))
+                    .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
+    void deveIsolarPlaybackPorProfissionalEProjetoDoMagicLink() throws Exception {
+        String version = publish(createReadyVideo());
+        mvc.perform(post("/api/projetos/" + projeto.getId() + "/versoes/" + version + "/playback")
+                .header("Authorization", bearer(otherToken))).andExpect(status().isNotFound());
+        mvc.perform(post("/api/projetos/" + UUID.randomUUID() + "/versoes/" + version + "/playback")
+                .header("Authorization", bearer(token))).andExpect(status().isNotFound());
+        Projeto other = new Projeto();
+        other.setNome("Outro projeto");
+        other.setProfissional(profissional);
+        other.setCliente(projeto.getCliente());
+        other.setEtapaAtual(EtapaProjeto.EM_EDICAO);
+        other.setMagicLinkAtivo(true);
+        other = projetos.save(other);
+        String otherClient = tokens.generateClientToken(projeto.getCliente(), other.getId());
+        mvc.perform(post("/api/portal/versoes/" + version + "/playback").header("Authorization", bearer(otherClient)))
+                .andExpect(status().isForbidden());
+        projeto.setMagicLinkAtivo(false);
+        projetos.save(projeto);
+        mvc.perform(post("/api/portal/versoes/" + version + "/playback").header("Authorization", bearer(clientToken)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deveCriarRascunhoRecuperavelNoProjetoSemPublicar() throws Exception {
+        var response = mvc.perform(post("/api/projetos/" + projeto.getId() + "/videos/uploads")
+                .header("Authorization", bearer(token)).contentType(MediaType.APPLICATION_JSON).content(uploadBody()))
+                .andExpect(status().isCreated()).andExpect(header().string("Cache-Control", "no-store")).andReturn();
+        UUID id = UUID.fromString(mapper.readTree(response.getResponse().getContentAsString()).path("video").path("id").asText());
+        mvc.perform(get("/api/projetos/" + projeto.getId() + "/videos").header("Authorization", bearer(token)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].id").value(id.toString()));
+        assertTrue(versoes.findByProjeto_IdOrderByNumeroAsc(projeto.getId()).isEmpty());
+        assertEquals(EtapaProjeto.EM_EDICAO, projetos.findById(projeto.getId()).orElseThrow().getEtapaAtual());
+        fake.snapshots.put(id, ready(id, 1920, 1080, "16:9"));
+        sync(id);
+        publish(id);
+        mvc.perform(get("/api/projetos/" + projeto.getId() + "/videos").header("Authorization", bearer(token)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    void deveDesvincularRascunhoSemExcluirVideoDaBiblioteca() throws Exception {
+        var response = mvc.perform(post("/api/projetos/" + projeto.getId() + "/videos/uploads")
+                .header("Authorization", bearer(token)).contentType(MediaType.APPLICATION_JSON).content(uploadBody()))
+                .andExpect(status().isCreated()).andReturn();
+        String id = mapper.readTree(response.getResponse().getContentAsString()).path("video").path("id").asText();
+        mvc.perform(delete("/api/projetos/" + projeto.getId() + "/videos/" + id).header("Authorization", bearer(token)))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/videos/" + id).header("Authorization", bearer(token))).andExpect(status().isOk());
+        mvc.perform(get("/api/projetos/" + projeto.getId() + "/videos").header("Authorization", bearer(token)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.totalElements").value(0));
+        mvc.perform(delete("/api/videos/" + id).header("Authorization", bearer(token))).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deveIsolarRascunhosERejeitarUploadForaDaEdicao() throws Exception {
+        mvc.perform(get("/api/projetos/" + projeto.getId() + "/videos").header("Authorization", bearer(otherToken)))
+                .andExpect(status().isNotFound());
+        mvc.perform(post("/api/projetos/" + projeto.getId() + "/videos/uploads").header("Authorization", bearer(otherToken))
+                .contentType(MediaType.APPLICATION_JSON).content(uploadBody())).andExpect(status().isNotFound());
+        mvc.perform(get("/api/projetos/" + projeto.getId() + "/videos").header("Authorization", bearer(clientToken)))
+                .andExpect(status().isForbidden());
+        projeto.setEtapaAtual(EtapaProjeto.ENTREGUE);
+        projetos.save(projeto);
+        mvc.perform(post("/api/projetos/" + projeto.getId() + "/videos/uploads").header("Authorization", bearer(token))
+                .contentType(MediaType.APPLICATION_JSON).content(uploadBody())).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deveImpedirPublicacaoDeVideoExcluido() throws Exception {
+        UUID id = createReadyVideo();
+        mvc.perform(delete("/api/videos/" + id).header("Authorization", bearer(token))).andExpect(status().isNoContent());
+        publishRequest(id, token).andExpect(status().isBadRequest());
+        assertTrue(versoes.findByProjeto_IdOrderByNumeroAsc(projeto.getId()).isEmpty());
+    }
+
+    private UUID createReadyVideo() throws Exception {
+        UUID id = createVideo();
+        fake.snapshots.put(id, ready(id, 1080, 1920, "9:16"));
+        sync(id);
+        return id;
+    }
+
+    @Test
+    void deveBloquearPlaybackComTokenExpiradoEVideoIndisponivelParaAvaliacao() throws Exception {
+        UUID id = createReadyVideo();
+        String version = publish(id);
+        String expired = com.auth0.jwt.JWT.create().withIssuer("take-too-api")
+                .withSubject(projeto.getCliente().getId().toString()).withClaim("role", "ROLE_CLIENTE")
+                .withClaim("projetoId", projeto.getId().toString()).withExpiresAt(Instant.now().minusSeconds(60))
+                .sign(com.auth0.jwt.algorithms.Algorithm.HMAC256("test-secret-key-that-is-at-least-32-chars-long-for-testing-only"));
+        mvc.perform(post("/api/portal/versoes/" + version + "/playback").header("Authorization", bearer(expired)))
+                .andExpect(status().isForbidden());
+        var video = videos.findById(id).orElseThrow();
+        video.setStatus(StatusVideo.ERRO);
+        videos.save(video);
+        mvc.perform(post("/api/portal/versoes/" + version + "/playback").header("Authorization", bearer(clientToken)))
+                .andExpect(status().isBadRequest());
+        mvc.perform(patch("/api/portal/versoes/" + version + "/status").header("Authorization", bearer(clientToken))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"APROVADA\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    private org.springframework.test.web.servlet.ResultActions publishRequest(UUID id, String jwt) throws Exception {
+        return mvc.perform(post("/api/projetos/" + projeto.getId() + "/versoes").header("Authorization", bearer(jwt))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"videoId\":\"" + id + "\"}"));
+    }
+
+    private String publish(UUID id) throws Exception {
+        var response = publishRequest(id, token).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.videoId").value(id.toString())).andReturn();
+        return mapper.readTree(response.getResponse().getContentAsString()).path("id").asText();
+    }
+
     private UUID createVideo() throws Exception {
         var result = mvc.perform(post("/api/videos/uploads").header("Authorization", bearer(token))
                 .contentType(MediaType.APPLICATION_JSON).content(uploadBody()))

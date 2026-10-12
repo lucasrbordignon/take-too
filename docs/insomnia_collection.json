@@ -643,7 +643,7 @@
       "metaSortKey": 6,
       "parameters": [],
       "authentication": {},
-      "description": "Não altera projeto ou versão."
+      "description": "Não altera projeto ou versão. Retorna miniaturaUrl opcional, assinada e com a mesma expiração do playback; não envie o JWT do TakeToo ao CDN."
     },
     {
       "_id": "req_video_delete",
@@ -685,6 +685,146 @@
       "parameters": [],
       "authentication": {},
       "description": "Selecione o arquivo binário no Insomnia. Copie url da criação para video_upload_url. Não envie Authorization/JWT do TakeToo. PUT simples; para chunks/retomada consulte docs/video-streaming.md."
+    },
+    {
+      "_id": "fld_project_videos",
+      "_type": "request_group",
+      "parentId": "wrk_taketoo",
+      "modified": 1726683600000,
+      "created": 1726683600000,
+      "name": "09. Vídeos no projeto",
+      "description": "Upload em rascunho, publicação explícita por videoId e playback autorizado da versão. Consulte docs/videos-no-projeto.md.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 900
+    },
+    {
+      "_id": "req_draft_create",
+      "_type": "request",
+      "parentId": "fld_project_videos",
+      "name": "Criar upload no projeto",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/projetos/{{ _.projeto_id }}/videos/uploads",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Corte do projeto\",\n  \"origem\": \"{{ _.video_origem }}\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 1,
+      "parameters": [],
+      "authentication": {},
+      "description": "Copie os IDs retornados para video_id/versao_id. JWT apenas para API; não enviar ao provedor."
+    },
+    {
+      "_id": "req_draft_list",
+      "_type": "request",
+      "parentId": "fld_project_videos",
+      "name": "Listar rascunhos do projeto",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/projetos/{{ _.projeto_id }}/videos?pagina=0&tamanho=20",
+      "body": {},
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "metaSortKey": 2,
+      "parameters": [],
+      "authentication": {},
+      "description": "Copie os IDs retornados para video_id/versao_id. JWT apenas para API; não enviar ao provedor."
+    },
+    {
+      "_id": "req_draft_remove",
+      "_type": "request",
+      "parentId": "fld_project_videos",
+      "name": "Retirar rascunho sem excluir vídeo",
+      "method": "DELETE",
+      "url": "{{ _.baseUrl }}/api/projetos/{{ _.projeto_id }}/videos/{{ _.video_id }}",
+      "body": {},
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "metaSortKey": 3,
+      "parameters": [],
+      "authentication": {},
+      "description": "Copie os IDs retornados para video_id/versao_id. JWT apenas para API; não enviar ao provedor."
+    },
+    {
+      "_id": "req_publish_video",
+      "_type": "request",
+      "parentId": "fld_project_videos",
+      "name": "Publicar vídeo pronto como versão",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/projetos/{{ _.projeto_id }}/versoes",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"videoId\": \"{{ _.video_id }}\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "metaSortKey": 4,
+      "parameters": [],
+      "authentication": {},
+      "description": "Copie os IDs retornados para video_id/versao_id. JWT apenas para API; não enviar ao provedor."
+    },
+    {
+      "_id": "req_version_playback",
+      "_type": "request",
+      "parentId": "fld_project_videos",
+      "name": "Playback da versão — profissional",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/projetos/{{ _.projeto_id }}/versoes/{{ _.versao_id }}/playback",
+      "body": {},
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "metaSortKey": 5,
+      "parameters": [],
+      "authentication": {},
+      "description": "Copie os IDs retornados para video_id/versao_id. JWT apenas para API; não enviar ao provedor. Retorna miniaturaUrl opcional, assinada e com a mesma expiração do playback; não envie o JWT do TakeToo ao CDN."
+    },
+    {
+      "_id": "req_portal_version_playback",
+      "_type": "request",
+      "parentId": "fld_project_videos",
+      "name": "Playback da versão — cliente",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/portal/versoes/{{ _.versao_id }}/playback",
+      "body": {},
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_cliente }}"
+        }
+      ],
+      "metaSortKey": 6,
+      "parameters": [],
+      "authentication": {},
+      "description": "Copie os IDs retornados para video_id/versao_id. JWT apenas para API; não enviar ao provedor. Retorna miniaturaUrl opcional, assinada e com a mesma expiração do playback; não envie o JWT do TakeToo ao CDN."
     }
   ]
 }

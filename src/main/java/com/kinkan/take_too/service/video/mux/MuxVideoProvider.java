@@ -165,8 +165,13 @@ public class MuxVideoProvider implements VideoProvider {
                     .withClaim("kid", properties.getSigningKeyId()).withSubject(identificador(playbackId))
                     .withAudience("v").withExpiresAt(expiraEm)
                     .sign(Algorithm.RSA256(null, key));
+            String thumbnailToken = JWT.create().withKeyId(properties.getSigningKeyId())
+                    .withClaim("kid", properties.getSigningKeyId()).withSubject(identificador(playbackId))
+                    .withAudience("t").withExpiresAt(expiraEm).withClaim("width", 640)
+                    .sign(Algorithm.RSA256(null, key));
             return new Playback("https://stream.mux.com/" + playbackId + ".m3u8?token=" + token,
-                    "application/vnd.apple.mpegurl", expiraEm);
+                    "application/vnd.apple.mpegurl", expiraEm,
+                    "https://image.mux.com/" + playbackId + "/thumbnail.webp?token=" + thumbnailToken);
         } catch (Exception ex) {
             throw new VideoProviderException("Não foi possível assinar a reprodução do vídeo.");
         }

@@ -4,6 +4,7 @@ import com.kinkan.take_too.domain.enums.StatusVersao;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,8 +26,14 @@ public class Versao {
     @Column(nullable = false)
     private Integer numero;
 
-    @Column(nullable = false, length = 1024)
+    @Nullable
+    @Column(length = 1024)
     private String arquivoUrl;
+
+    @Nullable
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "video_id")
+    private VideoAsset video;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

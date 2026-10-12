@@ -5,6 +5,7 @@ import com.kinkan.take_too.domain.dto.ComentarioDTO;
 import com.kinkan.take_too.domain.dto.ProjetoDTO;
 import com.kinkan.take_too.domain.dto.StatusVersaoUpdateDTO;
 import com.kinkan.take_too.domain.dto.VersaoDTO;
+import com.kinkan.take_too.domain.dto.VideoPlaybackDTO;
 import com.kinkan.take_too.security.CustomUserDetails;
 import com.kinkan.take_too.service.PortalClienteService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +30,14 @@ import org.springframework.lang.NonNull;
 public class PortalClienteController {
 
     private final PortalClienteService portalClienteService;
+
+    @PostMapping("/versoes/{versaoId}/playback")
+    @Operation(summary = "Gera reprodução privada de uma versão autorizada pelo magic link do projeto")
+    public ResponseEntity<VideoPlaybackDTO> playback(
+            @AuthenticationPrincipal CustomUserDetails user, @PathVariable UUID versaoId) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(portalClienteService.criarPlayback(Objects.requireNonNull(user.getProjetoIdAcesso()), versaoId));
+    }
 
     @GetMapping("/projetos/{projetoId}")
     @Operation(summary = "Retorna os detalhes do projeto para o cliente")

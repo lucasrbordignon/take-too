@@ -225,6 +225,16 @@ class MuxVideoProviderTest {
             assertEquals("key-test", jwt.getKeyId());
             assertEquals(expires.getEpochSecond(), jwt.getExpiresAtAsInstant().getEpochSecond());
             assertEquals("application/vnd.apple.mpegurl", playback.tipo());
+            assertNotNull(playback.miniaturaUrl());
+            var thumbnailJwt = JWT.require(Algorithm.RSA256((RSAPublicKey) pair.getPublic(), null))
+                    .withAudience("t").withSubject("private-1").build()
+                    .verify(playback.miniaturaUrl().split("token=")[1]);
+            assertEquals("key-test", thumbnailJwt.getKeyId());
+            assertEquals(640, thumbnailJwt.getClaim("width").asInt());
+            assertEquals(expires.getEpochSecond(), thumbnailJwt.getExpiresAtAsInstant().getEpochSecond());
+            assertThrows(com.auth0.jwt.exceptions.JWTVerificationException.class, () ->
+                    JWT.require(Algorithm.RSA256((RSAPublicKey) pair.getPublic(), null))
+                            .withAudience("v").build().verify(playback.miniaturaUrl().split("token=")[1]));
         }
     }
 

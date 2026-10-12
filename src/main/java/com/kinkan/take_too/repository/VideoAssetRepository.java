@@ -1,6 +1,7 @@
 package com.kinkan.take_too.repository;
 
 import com.kinkan.take_too.domain.entity.VideoAsset;
+import com.kinkan.take_too.domain.enums.StatusVideo;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +15,8 @@ import java.util.UUID;
 
 public interface VideoAssetRepository extends JpaRepository<VideoAsset, UUID> {
     Page<VideoAsset> findByProfissional_Id(UUID profissionalId, Pageable pageable);
+    Page<VideoAsset> findByProjetoRascunho_IdAndProfissional_IdAndStatusNot(UUID projetoId, UUID profissionalId,
+            StatusVideo status, Pageable pageable);
     Optional<VideoAsset> findByIdAndProfissional_Id(UUID id, UUID profissionalId);
     Optional<VideoAsset> findByProvedorAndUploadExternoId(String provedor, String uploadExternoId);
     Optional<VideoAsset> findByProvedorAndAssetExternoId(String provedor, String assetExternoId);

@@ -20,7 +20,11 @@ public interface VideoProvider {
 
     record Upload(String id, String url, String metodo, String protocolo,
                   Map<String, String> headers, Instant expiraEm) {}
-    record Playback(String url, String tipo, Instant expiraEm) {}
+    record Playback(String url, String tipo, Instant expiraEm, @Nullable String miniaturaUrl) {
+        public Playback(String url, String tipo, Instant expiraEm) {
+            this(url, tipo, expiraEm, null);
+        }
+    }
     record Snapshot(StatusVideo status, @Nullable String assetId, @Nullable String playbackId,
                     @Nullable Double duracaoSegundos, @Nullable Integer largura, @Nullable Integer altura,
                     @Nullable String proporcao, @Nullable String erro) {}

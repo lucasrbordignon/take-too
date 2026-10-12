@@ -35,6 +35,9 @@ class VersaoServiceTest {
     @Mock
     private ProjetoRepository projetoRepository;
 
+    @Mock
+    private VideoService videoService;
+
     @InjectMocks
     private VersaoService versaoService;
 
@@ -54,6 +57,39 @@ class VersaoServiceTest {
         projeto.setId(projetoId);
         projeto.setProfissional(profissional);
         projeto.setEtapaAtual(EtapaProjeto.EM_EDICAO);
+    }
+
+    @Test
+    void devePublicarVideoProntoMantendoVinculoENumeroDaVersao() {
+        var video = new com.kinkan.take_too.domain.entity.VideoAsset();
+        video.setId(UUID.randomUUID());
+        video.setStatus(com.kinkan.take_too.domain.enums.StatusVideo.PRONTO);
+        video.setProjetoRascunho(projeto);
+        when(projetoRepository.findByIdAndProfissional_IdForUpdate(projetoId, profissionalId)).thenReturn(Optional.of(projeto));
+        when(videoService.obterParaPublicacao(profissionalId, video.getId())).thenReturn(video);
+        when(versaoRepository.findMaxNumeroByProjetoId(projetoId)).thenReturn(Optional.of(2));
+        when(versaoRepository.save(any(Versao.class))).thenAnswer(i -> i.getArgument(0));
+
+        var dto = versaoService.criarVersao(profissionalId, projetoId, new VersaoCreateDTO(null, video.getId()));
+
+        assertEquals(3, dto.numero());
+        assertEquals(video.getId(), dto.videoId());
+        assertNull(dto.arquivoUrl());
+        assertNull(video.getProjetoRascunho());
+        assertEquals(EtapaProjeto.REVISAO_CLIENTE, projeto.getEtapaAtual());
+    }
+
+    @Test
+    void deveManterProjetoEmEdicaoQuandoVideoNaoPodeSerPublicado() {
+        UUID videoId = UUID.randomUUID();
+        when(projetoRepository.findByIdAndProfissional_IdForUpdate(projetoId, profissionalId)).thenReturn(Optional.of(projeto));
+        when(videoService.obterParaPublicacao(profissionalId, videoId)).thenThrow(new IllegalStateException("Vídeo não pronto"));
+
+        assertThrows(IllegalStateException.class, () -> versaoService.criarVersao(profissionalId, projetoId,
+                new VersaoCreateDTO(null, videoId)));
+        assertEquals(EtapaProjeto.EM_EDICAO, projeto.getEtapaAtual());
+        verify(versaoRepository, never()).save(any());
+        verify(projetoRepository, never()).save(any());
     }
 
     @Test

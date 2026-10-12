@@ -5,12 +5,14 @@ import com.kinkan.take_too.domain.dto.ComentarioCreateDTO;
 import com.kinkan.take_too.domain.dto.ComentarioDTO;
 import com.kinkan.take_too.domain.dto.ProjetoDTO;
 import com.kinkan.take_too.domain.dto.VersaoDTO;
+import com.kinkan.take_too.domain.dto.VideoPlaybackDTO;
 import com.kinkan.take_too.domain.entity.Cliente;
 import com.kinkan.take_too.domain.entity.Comentario;
 import com.kinkan.take_too.domain.entity.Projeto;
 import com.kinkan.take_too.domain.entity.Versao;
 import com.kinkan.take_too.domain.enums.EtapaProjeto;
 import com.kinkan.take_too.domain.enums.StatusVersao;
+import com.kinkan.take_too.domain.enums.StatusVideo;
 import com.kinkan.take_too.exception.ForbiddenException;
 import com.kinkan.take_too.exception.ResourceNotFoundException;
 import com.kinkan.take_too.repository.ClienteRepository;
@@ -33,6 +35,7 @@ public class PortalClienteService {
     private final VersaoRepository versaoRepository;
     private final ComentarioRepository comentarioRepository;
     private final ClienteRepository clienteRepository;
+    private final VideoService videoService;
 
     private void validarAcesso(UUID projetoIdAcessoToken, UUID projetoIdRequisicao) {
         if (!projetoIdAcessoToken.equals(projetoIdRequisicao)) {
@@ -71,8 +74,23 @@ public class PortalClienteService {
         
         return versaoRepository.findByProjeto_IdOrderByNumeroAsc(projetoId)
                 .stream()
-                .map(v -> new VersaoDTO(v.getId(), v.getNumero(), v.getArquivoUrl(), v.getStatus().name(), v.getCriadoEm()))
+                .map(VersaoDTO::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public VideoPlaybackDTO criarPlayback(UUID projetoIdAcesso, UUID versaoId) {
+        Versao versao = versaoRepository.findById(versaoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Versão não encontrada."));
+        Projeto projeto = versao.getProjeto();
+        validarAcesso(projetoIdAcesso, projeto.getId());
+        if (!projeto.isMagicLinkAtivo()) {
+            throw new ForbiddenException("Acesso ao projeto revogado.");
+        }
+        if (versao.getVideo() == null) {
+            throw new IllegalStateException("Esta versão usa arquivoUrl; reproduza pela URL legada.");
+        }
+        return videoService.criarPlayback(projeto.getProfissional().getId(), versao.getVideo().getId());
     }
 
     @Transactional
@@ -147,6 +165,10 @@ public class PortalClienteService {
         // Valida se a versão atual ainda está disponível para avaliação
         if (versao.getStatus() != StatusVersao.DISPONIVEL) {
             throw new IllegalStateException("Esta versão já foi previamente avaliada como " + versao.getStatus() + ".");
+        }
+
+        if (versao.getVideo() != null && versao.getVideo().getStatus() != StatusVideo.PRONTO) {
+            throw new IllegalStateException("O vídeo desta versão não está disponível para avaliação.");
         }
 
         versao.setStatus(novoStatus);

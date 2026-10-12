@@ -2,6 +2,10 @@
 
 O módulo de `/api/videos` permite validar upload e streaming sem conectar o vídeo ao fluxo atual. Cada vídeo pertence a um profissional. Não há vínculo com projeto, versão ou comentário, mudança de etapa, acesso pelo portal do cliente ou envio de notificações. O contrato anterior com `arquivoUrl` continua funcionando.
 
+Para usar vídeos da biblioteca em versões ou iniciar uploads dentro do projeto,
+consulte [vídeos no projeto — etapa 1](videos-no-projeto.md). Essas operações são
+explícitas e separadas do upload independente.
+
 ## Configuração
 
 O recurso é desativado por padrão e a aplicação continua iniciando sem credenciais do Mux. Para habilitar em um ambiente de validação, configure:
@@ -65,7 +69,9 @@ Todas as rotas de `/api/videos` exigem `Authorization: Bearer <JWT do profission
 2. A resposta contém `video.id`, `url`, `metodo`, `protocolo`, `headers` e `expiraEm`. Copie `video.id` para `video_id` e `url` para `video_upload_url` no Insomnia. Envie o arquivo como corpo binário para a URL externa, usando o método e headers informados. **Não envie o JWT do TakeToo ao provedor.** Para o Mux, o método é PUT e o protocolo é `HTTP_CONTENT_RANGE`.
 3. `GET /api/videos/{id}/upload` recupera a mesma sessão enquanto ela está aguardando o arquivo e dentro do prazo. Não renova a validade. Para retomada no Mux, implemente chunks e `Content-Range` ou utilize um cliente compatível; o protocolo deve ser tratado pelo cliente de upload, sem acoplar o player ao Mux.
 4. `POST /api/videos/{id}/sincronizar` consulta o provedor e atualiza o estado. `GET /api/videos/{id}` consulta somente os dados locais. Evite sincronização em loop apertado; para a validação manual, use intervalos de alguns segundos.
-5. Quando `PRONTO`, `POST /api/videos/{id}/playback` retorna `url`, `tipo`, `expiraEm` e os metadados do vídeo. A URL já contém a autorização temporária para HLS; o player não deve enviar o JWT do TakeToo ao CDN. Renove a sessão pela API ao expirar. A validade cobre pelo menos a duração do vídeo mais cinco minutos, ou o TTL configurado, o que for maior.
+5. Quando `PRONTO`, `POST /api/videos/{id}/playback` retorna `url`, `tipo`, `expiraEm`, `miniaturaUrl` opcional e os metadados do vídeo. As URLs já contêm autorização temporária; o player não deve enviar o JWT do TakeToo ao CDN. Renove a sessão pela API ao expirar. A validade cobre pelo menos a duração do vídeo mais cinco minutos, ou o TTL configurado, o que for maior.
+
+As miniaturas seguem a mesma autorização do playback, inclusive nas rotas de versão e portal. O adaptador Mux assina a imagem WebP separadamente (audience `t`, largura máxima solicitada de 640 pixels), sem expor IDs específicos no contrato. O frontend carrega imagens conforme os cards entram na área visível, preserva a proporção com `object-contain` e mantém um placeholder quando o provedor não oferece imagem ou ocorre falha. Não é necessário baixar HLS para gerar a miniatura. URLs não devem ser persistidas ou registradas em logs. Consulte a [documentação de imagens assinadas do Mux](https://www.mux.com/docs/guides/secure-video-playback).
 6. `GET /api/videos?pagina=0&tamanho=20` lista somente os vídeos do profissional; tamanho máximo 100.
 7. `DELETE /api/videos/{id}` cancela upload pendente ou exclui o asset remoto e marca o registro local `EXCLUIDO`. É idempotente e mantém a trilha local. Se o upload terminar durante o cancelamento, sincronize e repita a exclusão.
 
@@ -88,7 +94,7 @@ URLs de upload/playback não são persistidas e suas respostas têm `Cache-Contr
 
 ## Limites desta entrega
 
-- Não publica versões, não integra comentários, não fornece acesso pelo magic link e não envia e-mail/WhatsApp. Esses pontos serão conectados depois da validação independente.
+- As rotas independentes não publicam versões nem enviam e-mail/WhatsApp. Publicação e playback pelo magic link são oferecidos separadamente nas [rotas de projeto/portal](videos-no-projeto.md).
 - Não há quotas de armazenamento/duração/tamanho, agenda de limpeza ou verificação de assinatura do arquivo na API: os bytes vão diretamente ao provedor. Apenas validação do arquivo pelo provedor não substitui quotas do produto.
 - POST de criação ainda não recebe uma chave de idempotência. Evite retry automático desse POST após timeout; consulte a listagem e verifique o ambiente do provedor. Um upload criado remotamente cujo resultado se perdeu pode precisar de reconciliação operacional; sua correlação é o UUID em `passthrough`.
 - Falhas na criação ficam registradas em `ERRO`; para reenviar, crie um novo upload. Uploads abandonados não são removidos automaticamente; use exclusão manual.

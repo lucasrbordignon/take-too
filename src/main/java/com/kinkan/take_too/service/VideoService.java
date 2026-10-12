@@ -10,6 +10,10 @@ import com.kinkan.take_too.exception.ResourceNotFoundException;
 import com.kinkan.take_too.exception.VideoProviderException;
 import com.kinkan.take_too.repository.ProfissionalRepository;
 import com.kinkan.take_too.repository.VideoAssetRepository;
+import com.kinkan.take_too.repository.VersaoRepository;
+import com.kinkan.take_too.repository.ProjetoRepository;
+import com.kinkan.take_too.domain.entity.Projeto;
+import com.kinkan.take_too.domain.enums.EtapaProjeto;
 import com.kinkan.take_too.service.video.VideoProvider;
 import com.kinkan.take_too.service.video.VideoProviderRegistry;
 import org.jspecify.annotations.Nullable;
@@ -35,19 +39,31 @@ public class VideoService {
     private final VideoProperties properties;
     private final ObjectMapper mapper;
     private final TransactionTemplate transactions;
+    private final VersaoRepository versoes;
+    private final ProjetoRepository projetos;
 
     public VideoService(VideoAssetRepository repository, ProfissionalRepository profissionais,
                         VideoProviderRegistry providers, VideoProperties properties, ObjectMapper mapper,
-                        PlatformTransactionManager transactionManager) {
+                        PlatformTransactionManager transactionManager, VersaoRepository versoes, ProjetoRepository projetos) {
         this.repository = repository;
         this.profissionais = profissionais;
         this.providers = providers;
         this.properties = properties;
         this.mapper = mapper;
         this.transactions = new TransactionTemplate(transactionManager);
+        this.versoes = versoes;
+        this.projetos = projetos;
     }
 
     public VideoUploadDTO criarUpload(UUID profissionalId, VideoUploadCreateDTO dto) {
+        return criarUpload(profissionalId, dto, null);
+    }
+
+    public VideoUploadDTO criarUploadNoProjeto(UUID profissionalId, UUID projetoId, VideoUploadCreateDTO dto) {
+        return criarUpload(profissionalId, dto, projetoId);
+    }
+
+    private VideoUploadDTO criarUpload(UUID profissionalId, VideoUploadCreateDTO dto, @Nullable UUID projetoId) {
         validarHabilitado();
         validarOrigem(dto.origem());
         validarMarcaDagua(dto.marcaDagua());
@@ -55,7 +71,16 @@ public class VideoService {
         String watermark = encode(dto.marcaDagua());
         // A correlação fica disponível antes da chamada externa, inclusive para webhooks precoces.
         UUID id = Objects.requireNonNull(transactions.execute(tx -> {
+            Projeto projeto = null;
+            if (projetoId != null) {
+                projeto = projetos.findByIdAndProfissional_IdForUpdate(projetoId, profissionalId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado ou acesso negado."));
+                if (projeto.getEtapaAtual() != EtapaProjeto.EM_EDICAO) {
+                    throw new IllegalStateException("Uploads no projeto exigem a etapa EM_EDICAO.");
+                }
+            }
             VideoAsset video = new VideoAsset();
+            video.setProjetoRascunho(projeto);
             video.setId(UUID.randomUUID());
             video.setProfissional(profissionais.findById(profissionalId)
                     .orElseThrow(() -> new ResourceNotFoundException("Profissional não encontrado.")));
@@ -138,7 +163,43 @@ public class VideoService {
         Instant expiry = Instant.now().plusSeconds(Math.max(properties.getPlaybackTtlSeconds(), duration + 300));
         VideoProvider.Playback playback = providers.obter(video.getProvedor())
                 .criarPlayback(video.getPlaybackExternoId(), expiry);
-        return new VideoPlaybackDTO(toDTO(video), playback.url(), playback.tipo(), playback.expiraEm());
+        return new VideoPlaybackDTO(toDTO(video), playback.url(), playback.tipo(), playback.expiraEm(), playback.miniaturaUrl());
+    }
+
+    @Transactional
+    public VideoAsset obterParaPublicacao(UUID profissionalId, UUID videoId) {
+        validarHabilitado();
+        VideoAsset video = lockedOwned(profissionalId, videoId);
+        if (video.getStatus() != StatusVideo.PRONTO || video.getPlaybackExternoId() == null) {
+            throw new IllegalStateException("Somente um vídeo pronto pode ser publicado.");
+        }
+        return video;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<VideoDTO> listarRascunhos(UUID profissionalId, UUID projetoId, int pagina, int tamanho) {
+        validarHabilitado();
+        projetos.findByIdAndProfissional_Id(projetoId, profissionalId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado ou acesso negado."));
+        if (pagina < 0 || tamanho < 1 || tamanho > 100) {
+            throw new IllegalArgumentException("Página deve ser não negativa e tamanho deve estar entre 1 e 100.");
+        }
+        return repository.findByProjetoRascunho_IdAndProfissional_IdAndStatusNot(projetoId, profissionalId,
+                StatusVideo.EXCLUIDO, PageRequest.of(pagina, tamanho, Sort.by(Sort.Direction.DESC, "criadoEm", "id")))
+                .map(this::toDTO);
+    }
+
+    @Transactional
+    public void desvincularRascunho(UUID profissionalId, UUID projetoId, UUID videoId) {
+        validarHabilitado();
+        projetos.findByIdAndProfissional_IdForUpdate(projetoId, profissionalId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado ou acesso negado."));
+        VideoAsset video = lockedOwned(profissionalId, videoId);
+        if (video.getProjetoRascunho() == null || !projetoId.equals(video.getProjetoRascunho().getId())) {
+            throw new ResourceNotFoundException("Rascunho não encontrado neste projeto.");
+        }
+        video.setProjetoRascunho(null);
+        video.setAtualizadoEm(Instant.now());
     }
 
     @Transactional
@@ -146,6 +207,9 @@ public class VideoService {
         validarHabilitado();
         VideoAsset video = lockedOwned(profissionalId, videoId);
         if (video.getStatus() == StatusVideo.EXCLUIDO) { return; }
+        if (versoes.existsByVideo_Id(videoId)) {
+            throw new IllegalStateException("O vídeo está vinculado a uma versão publicada e não pode ser excluído.");
+        }
         if (video.getStatus() == StatusVideo.CRIANDO_UPLOAD) {
             throw new IllegalStateException("Aguarde a criação do upload antes de excluir o vídeo.");
         }
@@ -153,6 +217,7 @@ public class VideoService {
             providers.obter(video.getProvedor()).excluir(video.getId(), video.getUploadExternoId(), video.getAssetExternoId());
         }
         video.setStatus(StatusVideo.EXCLUIDO);
+        video.setProjetoRascunho(null);
         video.setPlaybackExternoId(null);
         video.setAtualizadoEm(Instant.now());
     }
