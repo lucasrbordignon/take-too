@@ -123,7 +123,7 @@ class VideoIntegrationTest {
     void deveBloquearClienteENaoAutenticado() throws Exception {
         for (String path : new String[]{"/api/videos", "/api/videos/" + UUID.randomUUID()}) {
             mvc.perform(get(path).header("Authorization", bearer(clientToken))).andExpect(status().isForbidden());
-            mvc.perform(get(path)).andExpect(status().isForbidden());
+            mvc.perform(get(path)).andExpect(status().isUnauthorized());
         }
         mvc.perform(post("/api/videos/uploads").header("Authorization", bearer(clientToken))
                 .contentType(MediaType.APPLICATION_JSON).content(uploadBody()))
@@ -358,7 +358,7 @@ class VideoIntegrationTest {
         projeto.setMagicLinkAtivo(false);
         projetos.save(projeto);
         mvc.perform(post("/api/portal/versoes/" + version + "/playback").header("Authorization", bearer(clientToken)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -431,7 +431,7 @@ class VideoIntegrationTest {
                 .withClaim("projetoId", projeto.getId().toString()).withExpiresAt(Instant.now().minusSeconds(60))
                 .sign(com.auth0.jwt.algorithms.Algorithm.HMAC256("test-secret-key-that-is-at-least-32-chars-long-for-testing-only"));
         mvc.perform(post("/api/portal/versoes/" + version + "/playback").header("Authorization", bearer(expired)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
         var video = videos.findById(id).orElseThrow();
         video.setStatus(StatusVideo.ERRO);
         videos.save(video);

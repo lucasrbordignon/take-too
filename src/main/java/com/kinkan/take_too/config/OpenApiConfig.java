@@ -26,7 +26,10 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("TakeToo API")
                         .version("1.0")
-                        .description("API para o MVP de Gestão de Projetos Audiovisuais (TakeToo)")
+                        .description("API para o MVP de Gestão de Projetos Audiovisuais (TakeToo). "
+                                + "Rotas protegidas retornam 401 para autenticação ausente, inválida ou expirada "
+                                + "e 403 para usuário autenticado sem permissão. Após 401, profissionais podem "
+                                + "renovar a sessão em POST /api/auth/refresh; magic links exigem novo acesso autorizado.")
                         .contact(new Contact().name("Lucas").email("lucas@example.com")));
     }
 }

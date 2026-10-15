@@ -186,3 +186,5 @@ src/main/java/com/kinkan/take_too/
 ```
 
 As sessões de playback também retornam `miniaturaUrl` opcional: uma imagem assinada para identificar vídeos na biblioteca e na seleção de versões. O Mux usa as mesmas credenciais de signing já configuradas. Consulte [vídeo e streaming](docs/video-streaming.md) para o contrato e autorização.
+
+Rotas protegidas retornam **401** quando o token está ausente, inválido ou expirado (incluindo magic links revogados), permitindo ao frontend renovar a sessão em `/api/auth/refresh`. **403** indica usuário autenticado sem permissão ou origem CORS não autorizada. Consumidores que tratavam expiração como 403 devem migrar para 401; o frontend atual já renova somente após 401. Os erros de autenticação e autorização mantêm o JSON do `GlobalExceptionHandler`.

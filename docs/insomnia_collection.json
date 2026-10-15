@@ -11,7 +11,7 @@
       "modified": 1726683600000,
       "created": 1726683600000,
       "name": "TakeToo API",
-      "description": "Workspace completo para testes da API TakeToo (MVP de Gestão de Projetos Audiovisuais)",
+      "description": "Workspace completo para testes da API TakeToo (MVP de Gestão de Projetos Audiovisuais) Rotas protegidas: token ausente/inválido/expirado retorna 401; usuário autenticado sem permissão retorna 403. Renovar sessão de profissional via /api/auth/refresh após 401.",
       "scope": "collection"
     },
     {

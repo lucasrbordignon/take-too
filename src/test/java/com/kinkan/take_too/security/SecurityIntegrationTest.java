@@ -87,6 +87,41 @@ class SecurityIntegrationTest {
         tokenCliente = tokenService.generateClientToken(cliente, projeto.getId());
     }
 
+
+    @Test
+    void deveRetornar401SemAutenticacaoParaPermitirRenovacaoNoFrontend() throws Exception {
+        for (String path : new String[]{"/api/videos", "/api/projetos", "/api/dashboard/metricas"}) {
+            mockMvc.perform(get(path))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.status").value(401))
+                    .andExpect(jsonPath("$.error").value("Unauthorized"))
+                    .andExpect(jsonPath("$.message").value("Autenticação necessária ou sessão expirada."))
+                    .andExpect(jsonPath("$.timestamp").exists());
+        }
+    }
+
+    @Test
+    void deveRetornar401ComTokenExpiradoOuInvalido() throws Exception {
+        String expired = com.auth0.jwt.JWT.create().withIssuer("take-too-api")
+                .withSubject(profissional.getEmail()).withClaim("role", "ROLE_PROFISSIONAL")
+                .withExpiresAt(java.time.Instant.now().minusSeconds(60))
+                .sign(com.auth0.jwt.algorithms.Algorithm.HMAC256(
+                        "test-secret-key-that-is-at-least-32-chars-long-for-testing-only"));
+        for (String token : new String[]{expired, "token-invalido"}) {
+            mockMvc.perform(get("/api/projetos").header("Authorization", "Bearer " + token))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.status").value(401));
+        }
+    }
+
+    @Test
+    void deveManter403QuandoUsuarioAutenticadoNaoTemPapelPermitido() throws Exception {
+        mockMvc.perform(get("/api/videos").header("Authorization", "Bearer " + tokenCliente))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.message").value("Acesso não permitido para este usuário."));
+    }
+
     @Test
     void rotaPingDeveSerPublica() throws Exception {
         mockMvc.perform(get("/api/ping"))
@@ -159,7 +194,7 @@ class SecurityIntegrationTest {
 
         mockMvc.perform(get("/api/portal/projetos/" + projeto.getId())
                 .header("Authorization", "Bearer " + tokenMismatched))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -169,7 +204,7 @@ class SecurityIntegrationTest {
 
         mockMvc.perform(get("/api/portal/projetos/" + projeto.getId())
                 .header("Authorization", "Bearer " + tokenCliente))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         var result = mockMvc.perform(post("/api/auth/magic-link")
                 .header("Authorization", "Bearer " + tokenProfissional)
