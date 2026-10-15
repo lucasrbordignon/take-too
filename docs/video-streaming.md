@@ -99,7 +99,7 @@ URLs de upload/playback não são persistidas e suas respostas têm `Cache-Contr
 - POST de criação ainda não recebe uma chave de idempotência. Evite retry automático desse POST após timeout; consulte a listagem e verifique o ambiente do provedor. Um upload criado remotamente cujo resultado se perdeu pode precisar de reconciliação operacional; sua correlação é o UUID em `passthrough`.
 - Falhas na criação ficam registradas em `ERRO`; para reenviar, crie um novo upload. Uploads abandonados não são removidos automaticamente; use exclusão manual.
 - Marca d'água é gravada no processamento. Não há cópia de entrega sem marca nem arquivo original armazenado pela aplicação; não prometa recuperação do original.
-- Testes automatizados usam adaptadores simulados e HTTP mockado, sem cobrança ou acesso ao Mux real. Uploads reais vertical/paisagem e webhooks duplicados foram validados; veja as [evidências e pendências da validação real](validacao-mux-real.md). Overlay e reprodução assinada ainda precisam de validação real.
+- Testes automatizados usam adaptadores simulados e HTTP mockado, sem cobrança ou acesso ao Mux real. Uploads reais vertical/paisagem e webhooks duplicados foram validados; veja as [evidências e pendências da validação real](validacao-mux-real.md). Reprodução assinada (HLS, segmentos e miniaturas) e rotas de playback de profissional/portal foram validadas por HTTP em 15/10/2026. Overlay e renderização do player no navegador ainda precisam de validação real.
 
 ## Referências
 

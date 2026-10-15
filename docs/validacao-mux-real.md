@@ -31,16 +31,44 @@ Ao final, o banco continha dois vídeos, zero projetos e zero versões.
 Os dois assets foram mantidos no Mux para inspeção. Não foram testadas marca
 d'água, notificações ou a renderização do player no frontend nesta execução.
 
-## Reprodução assinada pendente
+## Reprodução assinada — validação inicial
 
 Os assets usam política de reprodução `signed`. O endpoint local de playback
-retornou HTTP 503 porque faltam `MUX_SIGNING_KEY_ID` e `MUX_SIGNING_PRIVATE_KEY`.
+retornou HTTP 503 porque faltavam `MUX_SIGNING_KEY_ID` e `MUX_SIGNING_PRIVATE_KEY`.
 A tentativa de criar a chave com o token configurado retornou HTTP 403, inclusive
 após a atualização informada das credenciais.
 
-Para concluir, criar um token com Mux Video Read/Write e System Write, atualizar
-`MUX_TOKEN_ID` e `MUX_TOKEN_SECRET` no `.env` local e gerar a chave usando
-`POST /system/v1/signing-keys`. Salvar o ID e a chave privada somente no ambiente,
-reiniciar a API e validar o manifesto HLS com o token emitido pelo backend.
+Na ocasião, a orientação era criar um token com Mux Video Read/Write e System
+Write para gerar a chave com `POST /system/v1/signing-keys`, salvando ID e chave
+privada somente no ambiente. A pendência de configuração foi superada na
+validação de 15 de outubro descrita abaixo.
 
 Referência: [criação de signing keys no Mux](https://www.mux.com/docs/api-reference/system/signing-keys/create-signing-key).
+
+
+## Reprodução assinada validada em 15 de outubro de 2026
+
+Após configurar as duas variáveis de signing, foi gerado o JAR atual e a API
+local foi reconstruída com Docker Compose, preservando o volume PostgreSQL.
+A presença das chaves no container foi conferida sem exibir seus valores.
+
+Foram utilizados três vídeos prontos já existentes no banco local e duas
+versões publicadas. Não foram criados uploads, projetos ou versões nesta rodada.
+
+- API local `/api/ping`: HTTP 200.
+- Playback independente dos três vídeos: HTTP 200, com `Cache-Control: no-store`.
+- Manifesto HLS, playlist variante e primeiro segmento de mídia de cada vídeo:
+  HTTP 200, com conteúdo recebido.
+- Miniaturas assinadas dos três vídeos: HTTP 200, com assinatura de imagem válida.
+- Manifesto HLS sem token dos três vídeos: HTTP 403.
+- Playback das duas versões pelo profissional: HTTP 200.
+- Playback das duas versões pelo portal do cliente: HTTP 200.
+
+As requisições autenticadas usaram tokens temporários gerados localmente com
+papel e identidade correspondentes aos registros existentes, somente em memória.
+Isso valida autorização e emissão de playback nas rotas, mas não substitui o
+fluxo completo de login/magic link no navegador. Credenciais, JWTs e URLs assinadas
+não foram registrados nas evidências.
+
+Ainda faltam validação visual do player no frontend/mobile, marca d'água real e
+entrega efetiva dos webhooks pelo Mux. A reprodução assinada por HTTP está validada.
