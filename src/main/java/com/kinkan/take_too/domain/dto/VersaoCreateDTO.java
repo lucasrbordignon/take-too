@@ -8,13 +8,16 @@ import org.hibernate.validator.constraints.URL;
 
 public record VersaoCreateDTO(
         @Nullable @URL String arquivoUrl,
-        @Nullable UUID videoId
+        @Nullable UUID videoId,
+        @Nullable UUID imagemId
 ) {
-    public VersaoCreateDTO(String arquivoUrl) { this(arquivoUrl, null); }
+    public VersaoCreateDTO(String arquivoUrl) { this(arquivoUrl, null, null); }
+    public VersaoCreateDTO(String arquivoUrl, UUID videoId) { this(arquivoUrl, videoId, null); }
 
-    @AssertTrue(message = "Informe exatamente uma origem: arquivoUrl válida ou videoId.")
+    @AssertTrue(message = "Informe exatamente uma origem: arquivoUrl válida, videoId ou imagemId.")
     @JsonIgnore
     public boolean isOrigemValida() {
-        return videoId == null ? arquivoUrl != null && !arquivoUrl.isBlank() : arquivoUrl == null;
+        return (arquivoUrl != null ? 1 : 0) + (videoId != null ? 1 : 0) + (imagemId != null ? 1 : 0) == 1
+                && (arquivoUrl == null || !arquivoUrl.isBlank());
     }
 }

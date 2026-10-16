@@ -43,8 +43,9 @@ Estas instruções se aplicam a todo o repositório. Preserve as convenções ex
 ## Direção aprovada: vídeo e notificações
 
 - Mux é o primeiro adaptador de vídeo. Mantenha contratos de API e domínio independentes do provedor, com integrações isoladas atrás de `VideoProvider` e seleção por `VideoProviderRegistry`.
-- O fluxo de `/api/videos` é independente: vídeos pertencem ao profissional e não publicam versões, alteram projetos ou notificam clientes. Upload no projeto usa `/api/projetos/{id}/videos/uploads` e fica em rascunho recuperável; publicar exige ação explícita em `/api/projetos/{id}/versoes` com `videoId` pronto ou `arquivoUrl` legado, exatamente uma origem.
+- O fluxo de `/api/videos` é independente: vídeos pertencem ao profissional e não publicam versões, alteram projetos ou notificam clientes. Upload no projeto usa `/api/projetos/{id}/videos/uploads` e fica em rascunho recuperável; publicar exige ação explícita em `/api/projetos/{id}/versoes` com `videoId` pronto, `imagemId` pronto ou `arquivoUrl` legado, exatamente uma origem.
 - A mesma mídia pode ser reutilizada em versões/projetos do mesmo profissional. Vídeos usados por versões não podem ser excluídos; publicação e exclusão compartilham lock do vídeo. Playback do cliente é autorizado pela versão/projeto do magic link, sem liberar a biblioteca para clientes.
+- Imagens usam `ImageStorageProvider`/`ImageStorageRegistry`, inicialmente S3 privado. JPEG/PNG são validados por checksum, tamanho, formato e dimensões antes de publicação. Uploads usam PUT assinado sem sobrescrita; publicação e exclusão compartilham lock. Imagens publicadas são reutilizáveis pelo dono e protegidas contra exclusão. Comentários em imagens não têm timestamp e são ordenados por criação.
 - Separar upload/processamento de publicação. Só um vídeo pronto pode ser publicado como versão e iniciar a revisão.
 - Planejar upload direto retomável, reprodução assinada após autorização e webhooks autenticados com tratamento de duplicidade e eventos fora de ordem.
 - Separar estado técnico do vídeo do estado de avaliação da versão; preservar acesso às versões legadas durante a migração.

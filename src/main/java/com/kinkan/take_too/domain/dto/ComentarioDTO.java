@@ -6,7 +6,7 @@ import java.util.UUID;
 public record ComentarioDTO(
         UUID id,
         String texto,
-        Integer timestampSegundos,
+        @org.jspecify.annotations.Nullable Integer timestampSegundos,
         String autorTipo,
         Instant criadoEm
 ) {

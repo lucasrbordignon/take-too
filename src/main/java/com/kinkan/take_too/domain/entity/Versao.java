@@ -35,6 +35,11 @@ public class Versao {
     @JoinColumn(name = "video_id")
     private VideoAsset video;
 
+    @Nullable
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "imagem_id")
+    private ImagemAsset imagem;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private StatusVersao status;

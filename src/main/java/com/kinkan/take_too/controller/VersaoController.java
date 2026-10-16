@@ -34,7 +34,7 @@ public class VersaoController {
     }
 
     @PostMapping
-    @Operation(summary = "Publica uma versão por videoId pronto ou arquivoUrl legado e inicia revisão")
+    @Operation(summary = "Publica uma versão por videoId/imagemId pronto ou arquivoUrl legado e inicia revisão")
     public ResponseEntity<VersaoDTO> criar(@AuthenticationPrincipal CustomUserDetails user,
                                            @PathVariable UUID projetoId,
                                            @RequestBody @Valid VersaoCreateDTO dto) {
@@ -48,4 +48,10 @@ public class VersaoController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
                 .body(versaoService.criarPlayback(user.getId(), projetoId, versaoId));
     }
+    @PostMapping("/{versaoId}/imagem")
+    @Operation(summary = "Emite visualização temporária da imagem da versão para seu profissional")
+    public ResponseEntity<com.kinkan.take_too.domain.dto.ImagemVisualizacaoDTO> imagem(@AuthenticationPrincipal CustomUserDetails user, @PathVariable UUID projetoId, @PathVariable UUID versaoId) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(versaoService.visualizarImagem(user.getId(), projetoId, versaoId));
+    }
+
 }

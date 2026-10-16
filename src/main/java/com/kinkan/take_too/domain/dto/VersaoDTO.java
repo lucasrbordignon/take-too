@@ -13,10 +13,12 @@ public record VersaoDTO(
         Instant criadoEm,
         String tipoMidia,
         @Nullable UUID videoId,
-        @Nullable VideoVersaoDTO video
+        @Nullable VideoVersaoDTO video,
+        @Nullable UUID imagemId,
+        @Nullable ImagemDTO imagem
 ) {
     public VersaoDTO(UUID id, Integer numero, String arquivoUrl, String status, Instant criadoEm) {
-        this(id, numero, arquivoUrl, status, criadoEm, "URL_LEGADA", null, null);
+        this(id, numero, arquivoUrl, status, criadoEm, "URL_LEGADA", null, null, null, null);
     }
 
     public VersaoDTO(UUID id, Integer numero, String arquivoUrl, String status) {
@@ -25,8 +27,10 @@ public record VersaoDTO(
 
     public static VersaoDTO from(Versao versao) {
         var video = versao.getVideo();
+        var imagem = versao.getImagem();
         return new VersaoDTO(versao.getId(), versao.getNumero(), versao.getArquivoUrl(),
-                versao.getStatus().name(), versao.getCriadoEm(), video == null ? "URL_LEGADA" : "VIDEO",
-                video == null ? null : video.getId(), video == null ? null : VideoVersaoDTO.from(video));
+                versao.getStatus().name(), versao.getCriadoEm(), imagem != null ? "IMAGEM" : video == null ? "URL_LEGADA" : "VIDEO",
+                video == null ? null : video.getId(), video == null ? null : VideoVersaoDTO.from(video),
+                imagem == null ? null : imagem.getId(), imagem == null ? null : ImagemDTO.from(imagem));
     }
 }

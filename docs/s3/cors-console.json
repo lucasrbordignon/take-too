@@ -1,0 +1,23 @@
+[
+  {
+    "ID": "TakeTooImageUploads",
+    "AllowedOrigins": [
+      "https://taketoo.kinkan.cloud",
+      "http://localhost:5173",
+      "http://localhost:5174"
+    ],
+    "AllowedMethods": [
+      "GET",
+      "HEAD",
+      "PUT"
+    ],
+    "AllowedHeaders": [
+      "*"
+    ],
+    "ExposeHeaders": [
+      "ETag",
+      "x-amz-checksum-sha256"
+    ],
+    "MaxAgeSeconds": 3600
+  }
+]

@@ -24,7 +24,7 @@ public class Comentario {
     @JoinColumn(name = "cliente_id")
     private Cliente clienteAutor;
 
-    @Column(nullable = false)
+    @org.jspecify.annotations.Nullable
     private Integer timestampSegundos;
 
     @Column(nullable = false, columnDefinition = "TEXT")

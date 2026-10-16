@@ -24,10 +24,12 @@ public class ComentarioService {
     @Transactional(readOnly = true)
     public List<ComentarioDTO> listarComentariosDaVersao(UUID profissionalId, UUID versaoId) {
         // Valida se a versão pertence ao profissional (indiretamente valida o projeto)
-        versaoRepository.findByIdAndProjeto_Profissional_Id(versaoId, profissionalId)
+        Versao versao = versaoRepository.findByIdAndProjeto_Profissional_Id(versaoId, profissionalId)
                 .orElseThrow(() -> new ResourceNotFoundException("Versão não encontrada ou acesso negado."));
 
-        return comentarioRepository.findByVersao_IdOrderByTimestampSegundosAsc(versaoId)
+        return (versao.getImagem() != null
+                ? comentarioRepository.findByVersao_IdOrderByCriadoEmAsc(versaoId)
+                : comentarioRepository.findByVersao_IdOrderByTimestampSegundosAsc(versaoId))
                 .stream()
                 .map(this::toDTO)
                 .toList();
@@ -40,7 +42,8 @@ public class ComentarioService {
 
         Comentario comentario = new Comentario();
         comentario.setTexto(dto.texto());
-        comentario.setTimestampSegundos(dto.tempoVideo() != null ? dto.tempoVideo() : 0);
+        if (versao.getImagem() != null && dto.tempoVideo() != null) throw new IllegalArgumentException("Comentários em imagens não usam tempo de vídeo.");
+        comentario.setTimestampSegundos(versao.getImagem() != null ? null : dto.tempoVideo() != null ? dto.tempoVideo() : 0);
         // Não vinculamos o cliente_id aqui, ou seja, é um comentário do profissional
         comentario.setVersao(versao);
 

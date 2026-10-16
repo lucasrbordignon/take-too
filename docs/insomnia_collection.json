@@ -30,7 +30,10 @@
         "versao_id": "",
         "video_id": "",
         "video_upload_url": "",
-        "video_origem": "http://localhost:5173"
+        "video_origem": "http://localhost:5173",
+        "imagem_id": "",
+        "imagem_checksum": "",
+        "imagem_tamanho_bytes": 12345
       },
       "dataPropertyOrder": {
         "&": [
@@ -42,7 +45,10 @@
           "versao_id",
           "video_id",
           "video_upload_url",
-          "video_origem"
+          "video_origem",
+          "imagem_id",
+          "imagem_checksum",
+          "imagem_tamanho_bytes"
         ]
       },
       "color": "#6366f1",
@@ -825,6 +831,270 @@
       "parameters": [],
       "authentication": {},
       "description": "Copie os IDs retornados para video_id/versao_id. JWT apenas para API; não enviar ao provedor. Retorna miniaturaUrl opcional, assinada e com a mesma expiração do playback; não envie o JWT do TakeToo ao CDN."
+    },
+    {
+      "_id": "fld_imagens",
+      "_type": "request_group",
+      "parentId": "wrk_taketoo",
+      "name": "Imagens — S3 privado",
+      "environment": {},
+      "metaSortKey": 1100
+    },
+    {
+      "_id": "req_imagem_upload",
+      "_type": "request",
+      "parentId": "fld_imagens",
+      "name": "Autorizar upload independente",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/imagens/uploads",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Foto\",\n  \"tipo\": \"image/png\",\n  \"tamanhoBytes\": {{ _.imagem_tamanho_bytes }},\n  \"checksum\": \"{{ _.imagem_checksum }}\"\n}"
+      },
+      "metaSortKey": 0,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/imagens-s3.md. Envie o binário ao S3 usando a URL e todos os headers retornados, sem JWT ou cookies."
+    },
+    {
+      "_id": "req_imagem_upload_projeto",
+      "_type": "request",
+      "parentId": "fld_imagens",
+      "name": "Autorizar rascunho no projeto",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/projetos/{{ _.projeto_id }}/imagens/uploads",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Foto\",\n  \"tipo\": \"image/png\",\n  \"tamanhoBytes\": {{ _.imagem_tamanho_bytes }},\n  \"checksum\": \"{{ _.imagem_checksum }}\"\n}"
+      },
+      "metaSortKey": 1,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/imagens-s3.md. Envie o binário ao S3 usando a URL e todos os headers retornados, sem JWT ou cookies."
+    },
+    {
+      "_id": "req_imagem_listar",
+      "_type": "request",
+      "parentId": "fld_imagens",
+      "name": "Listar biblioteca",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/imagens?pagina=0&tamanho=20",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "body": {},
+      "metaSortKey": 2,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/imagens-s3.md. Envie o binário ao S3 usando a URL e todos os headers retornados, sem JWT ou cookies."
+    },
+    {
+      "_id": "req_imagem_rascunhos",
+      "_type": "request",
+      "parentId": "fld_imagens",
+      "name": "Listar rascunhos",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/projetos/{{ _.projeto_id }}/imagens",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "body": {},
+      "metaSortKey": 3,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/imagens-s3.md. Envie o binário ao S3 usando a URL e todos os headers retornados, sem JWT ou cookies."
+    },
+    {
+      "_id": "req_imagem_renovar",
+      "_type": "request",
+      "parentId": "fld_imagens",
+      "name": "Renovar autorização pendente",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/imagens/{{ _.imagem_id }}/upload",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "body": {},
+      "metaSortKey": 4,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/imagens-s3.md. Envie o binário ao S3 usando a URL e todos os headers retornados, sem JWT ou cookies."
+    },
+    {
+      "_id": "req_imagem_confirmar",
+      "_type": "request",
+      "parentId": "fld_imagens",
+      "name": "Confirmar arquivo enviado",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/imagens/{{ _.imagem_id }}/confirmar",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "body": {},
+      "metaSortKey": 5,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/imagens-s3.md. Envie o binário ao S3 usando a URL e todos os headers retornados, sem JWT ou cookies."
+    },
+    {
+      "_id": "req_imagem_visualizar",
+      "_type": "request",
+      "parentId": "fld_imagens",
+      "name": "Visualizar imagem própria",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/imagens/{{ _.imagem_id }}/visualizacao",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "body": {},
+      "metaSortKey": 6,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/imagens-s3.md. Envie o binário ao S3 usando a URL e todos os headers retornados, sem JWT ou cookies."
+    },
+    {
+      "_id": "req_imagem_publicar",
+      "_type": "request",
+      "parentId": "fld_imagens",
+      "name": "Publicar versão de imagem",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/projetos/{{ _.projeto_id }}/versoes",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"imagemId\": \"{{ _.imagem_id }}\"\n}"
+      },
+      "metaSortKey": 7,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/imagens-s3.md. Envie o binário ao S3 usando a URL e todos os headers retornados, sem JWT ou cookies."
+    },
+    {
+      "_id": "req_imagem_versao",
+      "_type": "request",
+      "parentId": "fld_imagens",
+      "name": "Visualizar versão profissional",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/projetos/{{ _.projeto_id }}/versoes/{{ _.versao_id }}/imagem",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "body": {},
+      "metaSortKey": 8,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/imagens-s3.md. Envie o binário ao S3 usando a URL e todos os headers retornados, sem JWT ou cookies."
+    },
+    {
+      "_id": "req_imagem_portal",
+      "_type": "request",
+      "parentId": "fld_imagens",
+      "name": "Visualizar versão cliente",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/portal/versoes/{{ _.versao_id }}/imagem",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_cliente }}"
+        }
+      ],
+      "body": {},
+      "metaSortKey": 9,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/imagens-s3.md. Envie o binário ao S3 usando a URL e todos os headers retornados, sem JWT ou cookies."
+    },
+    {
+      "_id": "req_imagem_comentar",
+      "_type": "request",
+      "parentId": "fld_imagens",
+      "name": "Comentar imagem sem timestamp",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/portal/versoes/{{ _.versao_id }}/comentarios",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_cliente }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"texto\": \"Ajustar contraste\"\n}"
+      },
+      "metaSortKey": 10,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/imagens-s3.md. Envie o binário ao S3 usando a URL e todos os headers retornados, sem JWT ou cookies."
+    },
+    {
+      "_id": "req_imagem_excluir",
+      "_type": "request",
+      "parentId": "fld_imagens",
+      "name": "Excluir imagem não publicada",
+      "method": "DELETE",
+      "url": "{{ _.baseUrl }}/api/imagens/{{ _.imagem_id }}",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "body": {},
+      "metaSortKey": 11,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/imagens-s3.md. Envie o binário ao S3 usando a URL e todos os headers retornados, sem JWT ou cookies."
     }
   ]
 }

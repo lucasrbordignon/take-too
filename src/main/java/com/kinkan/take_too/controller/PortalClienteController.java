@@ -83,4 +83,10 @@ public class PortalClienteController {
                 Objects.requireNonNull(dto.status()));
         return ResponseEntity.noContent().build();
     }
+    @PostMapping("/versoes/{versaoId}/imagem")
+    @Operation(summary = "Emite visualização privada da imagem autorizada pelo magic link")
+    public ResponseEntity<com.kinkan.take_too.domain.dto.ImagemVisualizacaoDTO> imagem(@AuthenticationPrincipal CustomUserDetails user, @PathVariable UUID versaoId) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(portalClienteService.visualizarImagem(Objects.requireNonNull(user.getProjetoIdAcesso()), versaoId));
+    }
+
 }

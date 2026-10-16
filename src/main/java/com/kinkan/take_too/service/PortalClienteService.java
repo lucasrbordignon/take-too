@@ -36,6 +36,7 @@ public class PortalClienteService {
     private final ComentarioRepository comentarioRepository;
     private final ClienteRepository clienteRepository;
     private final VideoService videoService;
+    private final ImagemService imagemService;
 
     private void validarAcesso(UUID projetoIdAcessoToken, UUID projetoIdRequisicao) {
         if (!projetoIdAcessoToken.equals(projetoIdRequisicao)) {
@@ -105,7 +106,8 @@ public class PortalClienteService {
 
         Comentario comentario = new Comentario();
         comentario.setTexto(dto.texto());
-        comentario.setTimestampSegundos(dto.tempoVideo() != null ? dto.tempoVideo() : 0);
+        if (versao.getImagem() != null && dto.tempoVideo() != null) throw new IllegalArgumentException("Comentários em imagens não usam tempo de vídeo.");
+        comentario.setTimestampSegundos(versao.getImagem() != null ? null : dto.tempoVideo() != null ? dto.tempoVideo() : 0);
         comentario.setClienteAutor(cliente);
         comentario.setVersao(versao);
 
@@ -127,7 +129,9 @@ public class PortalClienteService {
 
         validarAcesso(projetoIdAcesso, versao.getProjeto().getId());
 
-        return comentarioRepository.findByVersao_IdOrderByTimestampSegundosAsc(versaoId)
+        return (versao.getImagem() != null
+                ? comentarioRepository.findByVersao_IdOrderByCriadoEmAsc(versaoId)
+                : comentarioRepository.findByVersao_IdOrderByTimestampSegundosAsc(versaoId))
                 .stream()
                 .map(c -> new ComentarioDTO(
                         c.getId(),
@@ -171,6 +175,10 @@ public class PortalClienteService {
             throw new IllegalStateException("O vídeo desta versão não está disponível para avaliação.");
         }
 
+        if (versao.getImagem() != null && versao.getImagem().getStatus() != com.kinkan.take_too.domain.enums.StatusImagem.PRONTA) {
+            throw new IllegalStateException("A imagem desta versão não está disponível para avaliação.");
+        }
+
         versao.setStatus(novoStatus);
         versaoRepository.save(versao);
 
@@ -184,4 +192,14 @@ public class PortalClienteService {
             projetoRepository.save(projeto);
         }
     }
+    @Transactional(readOnly = true)
+    public com.kinkan.take_too.domain.dto.ImagemVisualizacaoDTO visualizarImagem(UUID projetoIdAcesso, UUID versaoId) {
+        var versao = versaoRepository.findById(versaoId).orElseThrow(() -> new ResourceNotFoundException("Versão não encontrada."));
+        var projeto = versao.getProjeto();
+        validarAcesso(projetoIdAcesso, projeto.getId());
+        if (!projeto.isMagicLinkAtivo()) throw new ForbiddenException("Acesso ao projeto revogado.");
+        if (versao.getImagem() == null) throw new IllegalStateException("Esta versão não contém uma imagem.");
+        return imagemService.visualizar(projeto.getProfissional().getId(), versao.getImagem().getId());
+    }
+
 }

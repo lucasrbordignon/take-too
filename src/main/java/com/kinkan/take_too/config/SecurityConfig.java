@@ -62,6 +62,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/projetos/**").hasRole("PROFISSIONAL")
                         .requestMatchers("/api/versoes/**").hasRole("PROFISSIONAL")
                         .requestMatchers("/api/comentarios/**").hasRole("PROFISSIONAL")
+                        .requestMatchers("/api/imagens", "/api/imagens/**").hasRole("PROFISSIONAL")
                         .requestMatchers("/api/videos", "/api/videos/**").hasRole("PROFISSIONAL")
                         .anyRequest().authenticated())
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);

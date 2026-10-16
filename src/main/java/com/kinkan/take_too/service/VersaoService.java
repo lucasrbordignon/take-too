@@ -25,6 +25,7 @@ public class VersaoService {
     private final VersaoRepository versaoRepository;
     private final ProjetoRepository projetoRepository;
     private final VideoService videoService;
+    private final ImagemService imagemService;
 
     @Transactional(readOnly = true)
     public List<VersaoDTO> listarVersoesDoProjeto(@NonNull UUID profissionalId, @NonNull UUID projetoId) {
@@ -41,7 +42,7 @@ public class VersaoService {
     @Transactional
     public VersaoDTO criarVersao(@NonNull UUID profissionalId, @NonNull UUID projetoId, @NonNull VersaoCreateDTO dto) {
         if (!dto.isOrigemValida()) {
-            throw new IllegalArgumentException("Informe exatamente uma origem: arquivoUrl válida ou videoId.");
+            throw new IllegalArgumentException("Informe exatamente uma origem: arquivoUrl válida, videoId ou imagemId.");
         }
         // Lock pessimista para garantir que criações concorrentes no mesmo projeto sejam serializadas
         Projeto projeto = projetoRepository.findByIdAndProfissional_IdForUpdate(projetoId, profissionalId)
@@ -67,6 +68,11 @@ public class VersaoService {
             if (video.getProjetoRascunho() != null && projetoId.equals(video.getProjetoRascunho().getId())) {
                 video.setProjetoRascunho(null);
             }
+        }
+        if (dto.imagemId() != null) {
+            var imagem = imagemService.obterParaPublicacao(profissionalId, dto.imagemId());
+            versao.setImagem(imagem);
+            if (imagem.getProjetoRascunho() != null && projetoId.equals(imagem.getProjetoRascunho().getId())) imagem.setProjetoRascunho(null);
         }
         versao.setProjeto(projeto);
         versao.setStatus(StatusVersao.DISPONIVEL);
@@ -94,4 +100,13 @@ public class VersaoService {
         }
         return videoService.criarPlayback(profissionalId, versao.getVideo().getId());
     }
+    @Transactional(readOnly = true)
+    public com.kinkan.take_too.domain.dto.ImagemVisualizacaoDTO visualizarImagem(UUID profissionalId, UUID projetoId, UUID versaoId) {
+        Versao versao = versaoRepository.findByIdAndProjeto_Profissional_Id(versaoId, profissionalId)
+                .filter(v -> projetoId.equals(v.getProjeto().getId()))
+                .orElseThrow(() -> new ResourceNotFoundException("Versão não encontrada ou acesso negado."));
+        if (versao.getImagem() == null) throw new IllegalStateException("Esta versão não contém uma imagem.");
+        return imagemService.visualizar(profissionalId, versao.getImagem().getId());
+    }
+
 }

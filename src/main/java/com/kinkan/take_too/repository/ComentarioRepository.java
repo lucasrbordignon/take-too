@@ -9,5 +9,7 @@ import java.util.UUID;
 
 @Repository
 public interface ComentarioRepository extends JpaRepository<Comentario, UUID> {
+    List<Comentario> findByVersao_IdOrderByCriadoEmAsc(UUID versaoId);
+
     List<Comentario> findByVersao_IdOrderByTimestampSegundosAsc(UUID versaoId);
 }

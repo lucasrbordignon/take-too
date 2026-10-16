@@ -12,6 +12,7 @@ import java.util.UUID;
 @Repository
 public interface VersaoRepository extends JpaRepository<Versao, UUID> {
     boolean existsByVideo_Id(UUID videoId);
+    boolean existsByImagem_Id(UUID imagemId);
     List<Versao> findByProjeto_IdOrderByNumeroAsc(UUID projetoId);
 
     Optional<Versao> findByIdAndProjeto_Profissional_Id(UUID id, UUID profissionalId);

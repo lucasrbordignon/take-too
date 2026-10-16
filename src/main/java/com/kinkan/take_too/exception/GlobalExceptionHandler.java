@@ -16,6 +16,11 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(ArmazenamentoException.class)
+    public ResponseEntity<Map<String, Object>> handleArmazenamento(ArmazenamentoException ex) {
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+    }
+
     @ExceptionHandler(VideoProviderException.class)
     public ResponseEntity<Map<String, Object>> handleVideoProvider(VideoProviderException ex) {
         return buildResponse(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());

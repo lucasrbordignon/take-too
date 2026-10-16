@@ -1,6 +1,6 @@
 # TakeToo API
 
-Backend do MVP de gestão de projetos audiovisuais. A API permite que profissionais organizem clientes, projetos, versões de vídeo e comentários, enquanto o cliente final acompanha e revisa um projeto por meio de um link de acesso temporário.
+Backend do MVP de gestão de projetos audiovisuais. A API permite que profissionais organizem clientes, projetos, versões de vídeo/imagem e comentários, enquanto o cliente final acompanha e revisa um projeto por meio de um link de acesso temporário.
 
 ## Tecnologias
 
@@ -188,3 +188,9 @@ src/main/java/com/kinkan/take_too/
 As sessões de playback também retornam `miniaturaUrl` opcional: uma imagem assinada para identificar vídeos na biblioteca e na seleção de versões. O Mux usa as mesmas credenciais de signing já configuradas. Consulte [vídeo e streaming](docs/video-streaming.md) para o contrato e autorização.
 
 Rotas protegidas retornam **401** quando o token está ausente, inválido ou expirado (incluindo magic links revogados), permitindo ao frontend renovar a sessão em `/api/auth/refresh`. **403** indica usuário autenticado sem permissão ou origem CORS não autorizada. Consumidores que tratavam expiração como 403 devem migrar para 401; o frontend atual já renova somente após 401. Os erros de autenticação e autorização mantêm o JSON do `GlobalExceptionHandler`.
+
+## Imagens em projetos e biblioteca
+
+Imagens JPEG/PNG podem ser enviadas à biblioteca ou em rascunho no projeto, reutilizadas e publicadas explicitamente com `imagemId`. O cliente revisa por magic link e comenta sem timestamp. Imagens publicadas são protegidas contra exclusão.
+
+Configure `IMAGEM_ENABLED=true`, `IMAGEM_PROVIDER=s3`, `IMAGEM_S3_BUCKET`, `IMAGEM_S3_REGION` e as credenciais AWS no ambiente do backend. Veja [configuração IAM/CORS, limites e fluxo completo](docs/imagens-s3.md). O frontend oferece a biblioteca em `/imagens` e a opção **Imagem** no modal de publicação.
