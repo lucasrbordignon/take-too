@@ -61,3 +61,9 @@ Marca d'água em imagens, HEIC/WebP, anotações por coordenada, quota por profi
 - API HTTP isolada com S3 real: PNG vertical e JPEG horizontal, PUT assinado, sobrescrita 412, confirmação repetida, dimensões, GET assinado, publicação explícita, portal, feedback sem timestamp, rejeição, reutilização em V2, aprovação, exclusão e revogação de magic link. Objetos temporários removidos.
 - CORS real validado para a origem de produção; acesso sem assinatura retornou 403.
 - Conferência visual em navegador/mobile pendente: não havia navegador conectado à sessão.
+
+### Publicação em produção em 16/10/2026
+
+Backend `a9dff62` publicado na VPS e web `e7444ef` publicado na Vercel. Backup do banco, `.env`, JAR e imagem Docker anterior preservados em `/opt/taketoo/.git/deploy-backups/20261016-185435`. Migration V8 confirmada, sem remoção do volume PostgreSQL.
+
+Na VPS, PNG e JPEG temporários passaram por upload assinado, confirmação/decodificação e visualização privada; ambos foram excluídos após o teste. Vídeo Mux existente continuou reproduzindo com assinatura. A biblioteca autenticada respondeu 200 pelo domínio público, com CORS para `https://taketoo.kinkan.cloud`. A rota pública `/imagens` e o bundle novo foram confirmados. A conferência visual em navegador/mobile continua pendente.
