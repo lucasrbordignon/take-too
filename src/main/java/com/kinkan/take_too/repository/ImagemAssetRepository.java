@@ -17,4 +17,5 @@ public interface ImagemAssetRepository extends JpaRepository<ImagemAsset, UUID> 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT i FROM ImagemAsset i WHERE i.id = :id AND i.profissional.id = :profissionalId")
     Optional<ImagemAsset> findOwnedForUpdate(@Param("id") UUID id, @Param("profissionalId") UUID profissionalId);
+    boolean existsByLogoMarcaDagua_IdAndStatusNot(UUID imagemId, StatusImagem status);
 }

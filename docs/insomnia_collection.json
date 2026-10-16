@@ -33,7 +33,8 @@
         "video_origem": "http://localhost:5173",
         "imagem_id": "",
         "imagem_checksum": "",
-        "imagem_tamanho_bytes": 12345
+        "imagem_tamanho_bytes": 12345,
+        "logo_imagem_id": ""
       },
       "dataPropertyOrder": {
         "&": [
@@ -48,7 +49,8 @@
           "video_origem",
           "imagem_id",
           "imagem_checksum",
-          "imagem_tamanho_bytes"
+          "imagem_tamanho_bytes",
+          "logo_imagem_id"
         ]
       },
       "color": "#6366f1",
@@ -1095,6 +1097,149 @@
       "parameters": [],
       "authentication": {},
       "description": "Veja docs/imagens-s3.md. Envie o binário ao S3 usando a URL e todos os headers retornados, sem JWT ou cookies."
+    },
+    {
+      "_id": "fld_marca_dagua",
+      "_type": "request_group",
+      "parentId": "wrk_taketoo",
+      "name": "Marca d'água — preferências",
+      "environment": {},
+      "metaSortKey": 1200
+    },
+    {
+      "_id": "req_marca_dagua_buscar",
+      "_type": "request",
+      "parentId": "fld_marca_dagua",
+      "name": "Consultar preferências",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/profissionais/me/marca-dagua",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "body": {},
+      "metaSortKey": 0,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/marca-dagua.md. A marca é planejada em snapshots; aplicação automática pertence à #11."
+    },
+    {
+      "_id": "req_marca_dagua_salvar",
+      "_type": "request",
+      "parentId": "fld_marca_dagua",
+      "name": "Salvar preferências",
+      "method": "PUT",
+      "url": "{{ _.baseUrl }}/api/profissionais/me/marca-dagua",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"ativaPadrao\": true,\n  \"logoImagemId\": \"{{ _.logo_imagem_id }}\",\n  \"posicao\": \"INFERIOR_DIREITA\",\n  \"larguraPercentual\": 15,\n  \"opacidadePercentual\": 70,\n  \"margemPercentual\": 3\n}"
+      },
+      "metaSortKey": 1,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/marca-dagua.md. A marca é planejada em snapshots; aplicação automática pertence à #11."
+    },
+    {
+      "_id": "req_marca_dagua_upload",
+      "_type": "request",
+      "parentId": "fld_marca_dagua",
+      "name": "Autorizar upload de logo",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/profissionais/me/marca-dagua/logo/uploads",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Logo\",\n  \"tipo\": \"image/png\",\n  \"tamanhoBytes\": {{ _.imagem_tamanho_bytes }},\n  \"checksum\": \"{{ _.imagem_checksum }}\"\n}"
+      },
+      "metaSortKey": 2,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/marca-dagua.md. A marca é planejada em snapshots; aplicação automática pertence à #11."
+    },
+    {
+      "_id": "req_marca_dagua_confirmar",
+      "_type": "request",
+      "parentId": "fld_marca_dagua",
+      "name": "Confirmar logo enviada",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/imagens/{{ _.logo_imagem_id }}/confirmar",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "body": {},
+      "metaSortKey": 3,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/marca-dagua.md. A marca é planejada em snapshots; aplicação automática pertence à #11."
+    },
+    {
+      "_id": "req_marca_dagua_previa",
+      "_type": "request",
+      "parentId": "fld_marca_dagua",
+      "name": "Visualizar logo privada",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/imagens/{{ _.logo_imagem_id }}/visualizacao",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        }
+      ],
+      "body": {},
+      "metaSortKey": 4,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/marca-dagua.md. A marca é planejada em snapshots; aplicação automática pertence à #11."
+    },
+    {
+      "_id": "req_marca_dagua_desvincular",
+      "_type": "request",
+      "parentId": "fld_marca_dagua",
+      "name": "Desativar e desvincular logo atual",
+      "method": "PUT",
+      "url": "{{ _.baseUrl }}/api/profissionais/me/marca-dagua",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer {{ _.token_profissional }}"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"ativaPadrao\": false,\n  \"logoImagemId\": null,\n  \"posicao\": \"INFERIOR_DIREITA\",\n  \"larguraPercentual\": 15,\n  \"opacidadePercentual\": 70,\n  \"margemPercentual\": 3\n}"
+      },
+      "metaSortKey": 5,
+      "parameters": [],
+      "authentication": {},
+      "description": "Veja docs/marca-dagua.md. A marca é planejada em snapshots; aplicação automática pertence à #11."
     }
   ]
 }

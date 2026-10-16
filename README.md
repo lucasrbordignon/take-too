@@ -19,7 +19,7 @@ Vídeos e imagens estão integrados aos projetos e publicados no backend e no we
 
 ### Pendente para fechar a distribuição
 
-- Preferências e logo do profissional, painel de marca d'água e aplicação da configuração no processamento das mídias de revisão.
+- Painel de marca d'água e aplicação da configuração no processamento das mídias de revisão. Preferências/logo e snapshots já estão implementados no backend; a aplicação automática ainda está pendente.
 - Definir retenção de originais e entrega/download sem marca.
 - Completar critérios do backlog de imagens: WebP e zoom acessível no visualizador. Hoje o upload aceita apenas JPEG/PNG.
 - Conferência visual em 360–390 px e desktop, acessibilidade, falhas de rede e expiração de sessões no fluxo real.
@@ -270,3 +270,11 @@ Mudanças no `.env` exigem recriação do container; `docker compose restart` n�
 - API com S3 real: PNG vertical e JPEG horizontal, upload, confirmação, visualização, publicação, feedback, rejeição, reutilização, aprovação e exclusão.
 - Produção: PNG/JPEG enviados, validados e excluídos; biblioteca autenticada e CORS pelo domínio público; reprodução Mux existente preservada.
 - A conferência visual em navegador/mobile ainda está pendente. Consulte [evidências e limitações](docs/imagens-s3.md).
+
+## Preferências de marca d'água
+
+A API oferece `GET/PUT /api/profissionais/me/marca-dagua` e `POST /api/profissionais/me/marca-dagua/logo/uploads`. A logo usa o storage privado de imagens; confirme o arquivo antes de salvar o ID nas preferências. Padrão desativado, PNG/JPEG até 2 MiB e 4096 pixels por dimensão.
+
+Novas mídias capturam `marcaDaguaPlanejada` quando a preferência está ativa. O snapshot preserva logo/configuração sem URL assinada; trocas posteriores não alteram mídias existentes. Logos referenciadas são protegidas contra exclusão. **Captura não significa aplicação visual:** painel e processamento automático continuam nas issues #10/#11.
+
+A migration V9 é aplicada ao iniciar o backend atualizado. Consulte [contratos, limites, concorrência e processamento futuro](docs/marca-dagua.md).

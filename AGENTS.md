@@ -50,6 +50,7 @@ Estas instruções se aplicam a todo o repositório. Preserve as convenções ex
 - Planejar upload direto retomável, reprodução assinada após autorização e webhooks autenticados com tratamento de duplicidade e eventos fora de ordem.
 - Separar estado técnico do vídeo do estado de avaliação da versão; preservar acesso às versões legadas durante a migração.
 - Fornecer dimensões/duração ao frontend para player vertical, paisagem e quadrado, mantendo comentários por tempo.
+- Preferências de marca d'água pertencem ao profissional; logos usam imagens próprias prontas. Capturar snapshot imutável e referência à logo em novas mídias, sem URLs assinadas; não confundir `marcaDaguaPlanejada` com aplicação visual. Proteger logos nas preferências e snapshots contra exclusão. Upload de logo não herda marca.
 - Marca d'água deve ser aplicada no processamento do vídeo de revisão. Retenção do original e entrega sem marca ainda precisam de definição.
 - Notificações devem usar outbox transacional, processamento assíncrono, retries e deduplicação; começar por e-mail e depois WhatsApp, respeitando preferências de contato.
 

@@ -24,4 +24,5 @@ public interface VideoAssetRepository extends JpaRepository<VideoAsset, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT v FROM VideoAsset v WHERE v.id = :id")
     Optional<VideoAsset> findByIdForUpdate(@Param("id") UUID id);
+    boolean existsByLogoMarcaDagua_IdAndStatusNot(UUID imagemId, StatusVideo status);
 }

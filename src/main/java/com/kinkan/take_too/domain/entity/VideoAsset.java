@@ -61,4 +61,12 @@ public class VideoAsset {
     private Instant criadoEm = Instant.now();
     @Column(nullable = false)
     private Instant atualizadoEm = Instant.now();
+    @Nullable
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "logo_marca_dagua_id")
+    private ImagemAsset logoMarcaDagua;
+
+    @Nullable
+    @Column(columnDefinition = "TEXT")
+    private String marcaDaguaPreferenciasJson;
 }

@@ -31,6 +31,9 @@ public class ImagemService {
     private final VersaoRepository versoes;
     private final ImageStorageRegistry providers;
     private final ImagemProperties properties;
+    private final MarcaDaguaService marcaDagua;
+    private final PreferenciasMarcaDaguaRepository preferenciasMarcaDagua;
+    private final VideoAssetRepository videos;
 
     private void habilitado() {
         if (!properties.isEnabled()) throw new ArmazenamentoException("Fluxo de imagens desativado.");
@@ -45,6 +48,14 @@ public class ImagemService {
     }
     @Transactional
     public ImagemUploadDTO criarUpload(UUID profissionalId, @Nullable UUID projetoId, ImagemUploadCreateDTO dto) {
+        return criarUpload(profissionalId, projetoId, dto, true);
+    }
+    @Transactional
+    public ImagemUploadDTO criarUploadLogo(UUID profissionalId, ImagemUploadCreateDTO dto) {
+        if (dto.tamanhoBytes() > MarcaDaguaService.MAX_LOGO_BYTES) throw new IllegalArgumentException("A logo deve ter até 2 MiB.");
+        return criarUpload(profissionalId, null, dto, false);
+    }
+    private ImagemUploadDTO criarUpload(UUID profissionalId, @Nullable UUID projetoId, ImagemUploadCreateDTO dto, boolean capturarMarca) {
         habilitado();
         if (dto.nome() == null || dto.nome().isBlank() || dto.nome().length() > 255
                 || dto.tipo() == null || !Set.of("image/jpeg", "image/png").contains(dto.tipo())
@@ -68,6 +79,8 @@ public class ImagemService {
         imagem.setTamanhoBytes(dto.tamanhoBytes()); imagem.setProvedor(properties.getProvider());
         imagem.setChave("imagens/" + profissionalId + "/" + imagem.getId() + (dto.tipo().equals("image/png") ? ".png" : ".jpg"));
         imagem.setStatus(StatusImagem.AGUARDANDO_UPLOAD);
+        var captura = capturarMarca ? marcaDagua.capturar(profissionalId) : null;
+        if (captura != null) { imagem.setLogoMarcaDagua(captura.logo()); imagem.setMarcaDaguaPreferenciasJson(captura.json()); }
         imagens.save(imagem);
         return upload(imagem);
     }
@@ -160,6 +173,11 @@ public class ImagemService {
         var imagem = owned(profissionalId, id, true);
         if (imagem.getStatus() == StatusImagem.EXCLUIDA) return;
         if (versoes.existsByImagem_Id(id)) throw new IllegalStateException("A imagem está vinculada a uma versão publicada e não pode ser excluída.");
+        if (preferenciasMarcaDagua.existsByLogo_Id(id)
+                || videos.existsByLogoMarcaDagua_IdAndStatusNot(id, StatusVideo.EXCLUIDO)
+                || imagens.existsByLogoMarcaDagua_IdAndStatusNot(id, StatusImagem.EXCLUIDA)) {
+            throw new IllegalStateException("A imagem é usada como logo nas preferências ou em uma mídia e não pode ser excluída.");
+        }
         providers.obter(imagem.getProvedor()).excluir(imagem.getChave());
         imagem.setProjetoRascunho(null); imagem.setStatus(StatusImagem.EXCLUIDA); imagem.setAtualizadoEm(Instant.now());
         imagens.save(imagem);

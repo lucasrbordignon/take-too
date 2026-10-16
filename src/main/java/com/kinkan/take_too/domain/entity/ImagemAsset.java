@@ -31,4 +31,12 @@ public class ImagemAsset {
     @Nullable @Column(length = 512) private String erro;
     @Column(nullable = false, updatable = false) private Instant criadoEm = Instant.now();
     @Column(nullable = false) private Instant atualizadoEm = Instant.now();
+    @Nullable
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "logo_marca_dagua_id")
+    private ImagemAsset logoMarcaDagua;
+
+    @Nullable
+    @Column(columnDefinition = "TEXT")
+    private String marcaDaguaPreferenciasJson;
 }

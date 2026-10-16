@@ -41,10 +41,11 @@ public class VideoService {
     private final TransactionTemplate transactions;
     private final VersaoRepository versoes;
     private final ProjetoRepository projetos;
+    private final MarcaDaguaService marcaDagua;
 
     public VideoService(VideoAssetRepository repository, ProfissionalRepository profissionais,
                         VideoProviderRegistry providers, VideoProperties properties, ObjectMapper mapper,
-                        PlatformTransactionManager transactionManager, VersaoRepository versoes, ProjetoRepository projetos) {
+                        PlatformTransactionManager transactionManager, VersaoRepository versoes, ProjetoRepository projetos, MarcaDaguaService marcaDagua) {
         this.repository = repository;
         this.profissionais = profissionais;
         this.providers = providers;
@@ -53,6 +54,7 @@ public class VideoService {
         this.transactions = new TransactionTemplate(transactionManager);
         this.versoes = versoes;
         this.projetos = projetos;
+        this.marcaDagua = marcaDagua;
     }
 
     public VideoUploadDTO criarUpload(UUID profissionalId, VideoUploadCreateDTO dto) {
@@ -88,6 +90,9 @@ public class VideoService {
             video.setProvedor(provider.id());
             video.setStatus(StatusVideo.CRIANDO_UPLOAD);
             video.setMarcaDaguaJson(watermark);
+            // A marca legada explícita tem precedência. Preferências são planejadas para a etapa de processamento.
+            var captura = dto.marcaDagua() == null ? marcaDagua.capturar(profissionalId) : null;
+            if (captura != null) { video.setLogoMarcaDagua(captura.logo()); video.setMarcaDaguaPreferenciasJson(captura.json()); }
             repository.saveAndFlush(video);
             return video.getId();
         }));
@@ -360,6 +365,6 @@ public class VideoService {
         }
         return new VideoDTO(video.getId(), video.getNome(), video.getStatus(), video.getDuracaoSegundos(),
                 video.getLargura(), video.getAltura(), ratio, orientation, watermark, video.getErro(),
-                video.getCriadoEm(), video.getAtualizadoEm());
+                video.getCriadoEm(), video.getAtualizadoEm(), MarcaDaguaSnapshotDTO.fromJson(video.getMarcaDaguaPreferenciasJson()));
     }
 }
