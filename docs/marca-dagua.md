@@ -75,3 +75,9 @@ Próximo passo: #10, consumir esses endpoints no painel. A aplicação visual re
 - PostgreSQL 16 isolado: 14 testes direcionados de preferências, processamento interno e concorrência passaram. Upgrade V8 → V9 preservou projeto, versão legada e comentário existentes.
 - S3 real com API/banco isolados: logos PNG/JPEG privadas enviadas, confirmadas e visualizadas; preferências salvas/trocadas/desativadas; snapshot preservado após troca; exclusão protegida e posterior liberação validadas. Objetos temporários removidos.
 - O processamento visual automático e a conferência de marca no arquivo final não foram realizados; pertencem à #11.
+
+### Publicação e verificação na VPS
+
+Backend `5c405a1` publicado com V9 em 16/10/2026. Backup de banco, `.env`, JAR e imagem anterior preservado em `/opt/taketoo/.git/deploy-backups/20261016-233425`; volume PostgreSQL mantido. Preferências autenticadas responderam 200 e ausência de sessão retornou 401. Uma logo PNG temporária foi enviada, confirmada, visualizada e excluída com S3 real, sem alterar preferências de profissionais existentes.
+
+O host regional `taketoo.s3.sa-east-1.amazonaws.com` foi acrescentado à lista permitida de processamento, preservando outros hosts e mantendo o bucket privado. A API respondeu 200 após recriação. Mais quatro regressões de concorrência de imagens/vídeos passaram sobre a V9 final: 18 testes direcionados nas execuções PostgreSQL desta entrega.
